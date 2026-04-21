@@ -15,15 +15,18 @@ func _ready() -> void:
 	UITheme.apply_lobby_style(self)
 	_apply_art()
 	var profile := PlayerState.profile
+	var cult := PlayerState.get_cultivation()
+	var breakthrough_ready := bool(cult.get("breakthrough_ready", false))
 	name_label.text = "%s · Ур. %d" % [PlayerState.get_name(), PlayerState.get_level()]
 	power_label.text = "Боевая мощь: %d" % PlayerState.get_power()
-	stage_label.text = ConfigRepository.get_stage_name(str(PlayerState.get_cultivation().get("current_stage_id", "")))
+	stage_label.text = "%s %s" % ["[ГОТОВ]" if breakthrough_ready else "[ПУТЬ]", ConfigRepository.get_stage_name(str(cult.get("current_stage_id", "")))]
 	stats_label.text = "[b]Текущий статус[/b]\n\n" + \
 		"• Путь: Праведный\n" + \
 		"• Элемент: Металл / Свет\n" + \
 		"• VIP: %s\n" % str(profile.get("vip_level", 0)) + \
 		"• Сервер: %s\n" % str(profile.get("server_id", "s1")) + \
 		"• Титул: Наследник нефритового меча\n" + \
+		"• Прорыв: %s\n" % ("готов" if breakthrough_ready else "накапливает Ци") + \
 		"• Снаряжение доступно на отдельном экране"
 	$Panel.add_theme_stylebox_override("panel", UITheme.make_card_style(UITheme.COLOR_GOLD_DARK))
 	$Panel/VBox/Header/EquipmentButton.icon = IconLoader.get_item_icon("jade_sword_01")

@@ -32,11 +32,15 @@ func _apply_art() -> void:
 func _refresh() -> void:
 	for child in offer_list.get_children():
 		child.queue_free()
+	var jade_balance := int(PlayerState.get_currencies().get("jade", 0))
 	for offer in ConfigRepository.shop_offers.get("offers", []):
 		var offer_id := str(offer.get("id", ""))
+		var price := int(offer.get("price_jade", 0))
+		var affordable := jade_balance >= price
+		var badge := "[ГОТОВО]" if affordable else "[НЕТ НЕФРИТА]"
 		var card := PanelContainer.new()
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		UITheme.apply_card(card, UITheme.COLOR_GOLD_DARK)
+		UITheme.apply_card(card, UITheme.COLOR_GOLD_DARK if affordable else UITheme.COLOR_JADE_DARK)
 		var row := HBoxContainer.new()
 		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_theme_constant_override("separation", 12)
@@ -47,7 +51,7 @@ func _refresh() -> void:
 		icon.texture = IconLoader.get_item_icon(str(offer.get("currency", "")))
 		var label := Label.new()
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		label.text = "%s · %s нефрита" % [str(offer.get("title", offer_id)), str(offer.get("price_jade", 0))]
+		label.text = "%s %s · %s нефрита" % [badge, str(offer.get("title", offer_id)), str(price)]
 		label.add_theme_color_override("font_color", UITheme.COLOR_TEXT)
 		var open_button := Button.new()
 		open_button.text = "Детали"
@@ -58,6 +62,7 @@ func _refresh() -> void:
 		buy_button.text = "Купить"
 		buy_button.icon = IconLoader.get_currency_icon("jade")
 		UITheme.apply_accent_button(buy_button, true)
+		buy_button.disabled = not affordable
 		buy_button.pressed.connect(_buy_offer.bind(offer))
 		row.add_child(icon)
 		row.add_child(label)
@@ -71,12 +76,16 @@ func _show_offer(offer_id: String) -> void:
 	for offer in ConfigRepository.shop_offers.get("offers", []):
 		if str(offer.get("id", "")) != offer_id:
 			continue
-		detail_label.text = "[b]%s[/b]\n\nТег: %s\nЦена: %s нефрита\nКоличество: %s %s" % [
+		var price := int(offer.get("price_jade", 0))
+		var jade_balance := int(PlayerState.get_currencies().get("jade", 0))
+		var state := "доступно" if jade_balance >= price else "не хватает нефрита"
+		detail_label.text = "[b]%s[/b]\n\nТег: %s\nЦена: %s нефрита\nКоличество: %s %s\nСтатус: %s" % [
 			str(offer.get("title", offer_id)),
 			str(offer.get("tag", "daily")),
-			str(offer.get("price_jade", 0)),
+			str(price),
 			str(offer.get("amount", 0)),
-			str(offer.get("currency", "item"))
+			str(offer.get("currency", "item")),
+			state
 		]
 		return
 	detail_label.text = "Предложение не найдено"
@@ -85,14 +94,17 @@ func _buy_offer(offer: Dictionary) -> void:
 	var price := int(offer.get("price_jade", 0))
 	if not PlayerState.spend_currency("jade", price):
 		detail_label.text = "[b]Недостаточно нефрита[/b]"
+		_refresh()
 		return
 	var currency_id := str(offer.get("currency", "gold"))
 	var amount := int(offer.get("amount", 0))
 	if currency_id == "breakthrough_stone":
 		detail_label.text = "[b]Покупка совершена[/b]\n\nНабор прорыва отмечен как купленный. Интеграция в инвентарь будет следующим шагом."
+		_refresh()
 		return
 	PlayerState.add_currency(currency_id, amount)
 	detail_label.text = "[b]Покупка совершена[/b]\n\nПолучено: %s %s" % [str(amount), currency_id]
+	_refresh()
 
 func _on_back_pressed() -> void:
 	SceneRouter.goto_scene("res://scenes/lobby/LobbyScreen.tscn")

@@ -6,6 +6,7 @@ signal currencies_changed
 signal skills_changed
 signal pets_changed
 signal equipment_changed
+signal tutorial_changed
 
 var profile: Dictionary = {}
 
@@ -16,6 +17,8 @@ func load_mock_profile() -> void:
 		push_error("Failed to open mock player profile")
 		return
 	profile = JSON.parse_string(file.get_as_text())
+	if not profile.has("tutorial"):
+		profile["tutorial"] = {"completed": false, "step_index": 0}
 	save_profile()
 	emit_signal("player_loaded")
 
@@ -25,6 +28,8 @@ func load_or_create_profile() -> void:
 		load_mock_profile()
 		return
 	profile = saved
+	if not profile.has("tutorial"):
+		profile["tutorial"] = {"completed": false, "step_index": 0}
 	emit_signal("player_loaded")
 
 func save_profile() -> void:
@@ -47,6 +52,23 @@ func get_cultivation() -> Dictionary:
 
 func get_equipment() -> Dictionary:
 	return profile.get("equipment", {})
+
+func get_tutorial() -> Dictionary:
+	return profile.get("tutorial", {"completed": false, "step_index": 0})
+
+func set_tutorial_step(step_index: int) -> void:
+	var tutorial := get_tutorial()
+	tutorial["step_index"] = step_index
+	profile["tutorial"] = tutorial
+	save_profile()
+	emit_signal("tutorial_changed")
+
+func complete_tutorial() -> void:
+	var tutorial := get_tutorial()
+	tutorial["completed"] = true
+	profile["tutorial"] = tutorial
+	save_profile()
+	emit_signal("tutorial_changed")
 
 func equip_item(slot_id: String, item_id: String) -> void:
 	var equipment := get_equipment()

@@ -18,6 +18,15 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 color = Color(0.05, 0.07, 0.06, 1)
 
+[node name="BattleBackgroundArt" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+stretch_mode = 6
+expand_mode = 1
+self_modulate = Color(1, 1, 1, 0.55)
+
 [node name="TopBar" type="PanelContainer" parent="."]
 layout_mode = 1
 offset_left = 24.0
@@ -67,6 +76,21 @@ offset_top = 190.0
 offset_right = 660.0
 offset_bottom = 830.0
 
+[node name="ArenaBackdropArt" type="TextureRect" parent="Arena"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+stretch_mode = 6
+expand_mode = 1
+
+[node name="ArenaShade" type="ColorRect" parent="Arena"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.07, 0.09, 0.08, 0.32)
+
 [node name="ArenaVBox" type="VBoxContainer" parent="Arena"]
 layout_mode = 2
 alignment = 1
@@ -74,7 +98,7 @@ alignment = 1
 [node name="EnemySilhouette" type="ColorRect" parent="Arena/ArenaVBox"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 200)
-color = Color(0.35, 0.2, 0.2, 1)
+color = Color(0.35, 0.2, 0.2, 0.8)
 
 [node name="Spacer" type="Control" parent="Arena/ArenaVBox"]
 layout_mode = 2
@@ -83,7 +107,7 @@ custom_minimum_size = Vector2(0, 40)
 [node name="PlayerSilhouette" type="ColorRect" parent="Arena/ArenaVBox"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 220)
-color = Color(0.18, 0.44, 0.36, 1)
+color = Color(0.18, 0.44, 0.36, 0.8)
 
 [node name="LogPanel" type="PanelContainer" parent="."]
 layout_mode = 1

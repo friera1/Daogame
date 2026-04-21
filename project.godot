@@ -1,0 +1,31 @@
+; Engine configuration file.
+; Godot 4 project scaffold for Daogame.
+
+config_version=5
+
+[application]
+config/name="Daogame"
+run/main_scene="res://scenes/bootstrap/Bootstrap.tscn"
+config/features=PackedStringArray("4.2")
+config/icon="res://icon.svg"
+
+[display]
+window/size/viewport_width=720
+window/size/viewport_height=1280
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep_width"
+window/handheld/orientation=1
+
+[rendering]
+renderer/rendering_method="mobile"
+textures/vram_compression/import_etc2_astc=true
+
+[autoload]
+SceneRouter="*res://scripts/app/SceneRouter.gd"
+GameSession="*res://scripts/app/GameSession.gd"
+PlayerState="*res://scripts/app/PlayerState.gd"
+ConfigRepository="*res://scripts/config/ConfigRepository.gd"
+UITheme="*res://scripts/ui/UITheme.gd"
+
+[input]
+

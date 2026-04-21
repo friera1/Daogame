@@ -1,5 +1,7 @@
 extends Control
 
+const IconLoader = preload("res://scripts/ui/IconLoader.gd")
+
 @onready var chapter_list: VBoxContainer = %ChapterList
 @onready var node_list: VBoxContainer = %NodeList
 @onready var info_label: RichTextLabel = %InfoLabel
@@ -17,6 +19,8 @@ func _refresh_chapters() -> void:
 		var chapter_id := str(chapter.get("id", ""))
 		var button := Button.new()
 		button.text = str(chapter.get("name", chapter_id))
+		button.icon = IconLoader.get_icon("story_marker")
+		UITheme.apply_accent_button(button, false)
 		button.pressed.connect(_show_chapter.bind(chapter_id))
 		chapter_list.add_child(button)
 	if ConfigRepository.story.get("chapters", []).size() > 0:
@@ -32,8 +36,18 @@ func _show_chapter(chapter_id: String) -> void:
 		for node in chapter.get("nodes", []):
 			var node_id := str(node.get("id", ""))
 			var node_type := str(node.get("type", "node"))
+			var card := PanelContainer.new()
+			card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			var border := UITheme.COLOR_GOLD_DARK if node_type == "reward" else UITheme.COLOR_JADE_DARK
+			UITheme.apply_card(card, border)
 			var row := HBoxContainer.new()
 			row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			row.add_theme_constant_override("separation", 12)
+			card.add_child(row)
+			var icon := TextureRect.new()
+			icon.custom_minimum_size = Vector2(44, 44)
+			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			icon.texture = _node_icon(node_type)
 			var label := Label.new()
 			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			var suffix := ""
@@ -42,11 +56,22 @@ func _show_chapter(chapter_id: String) -> void:
 			label.text = "%s · %s%s" % [node_type, str(node.get("title", "Узел")), suffix]
 			var action := Button.new()
 			action.text = "Открыть"
+			UITheme.apply_accent_button(action, node_type == "reward")
 			action.pressed.connect(_open_node.bind(node))
+			row.add_child(icon)
 			row.add_child(label)
 			row.add_child(action)
-			node_list.add_child(row)
+			node_list.add_child(card)
 		return
+
+func _node_icon(node_type: String) -> Texture2D:
+	match node_type:
+		"reward":
+			return IconLoader.get_currency_icon("jade")
+		"battle":
+			return IconLoader.get_skill_icon("azure_slash")
+		_:
+			return IconLoader.get_icon("story_marker")
 
 func _open_node(node: Dictionary) -> void:
 	var node_type := str(node.get("type", "story"))

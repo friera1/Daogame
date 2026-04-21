@@ -1,6 +1,7 @@
 extends Node
 
 var is_initialized: bool = false
+var last_battle_result: Dictionary = {}
 
 func initialize() -> void:
 	if is_initialized:

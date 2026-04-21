@@ -1,0 +1,130 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/BattleScreen.gd" id="1"]
+
+[node name="BattleScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.05, 0.07, 0.06, 1)
+
+[node name="TopBar" type="PanelContainer" parent="."]
+layout_mode = 1
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 696.0
+offset_bottom = 130.0
+
+[node name="TopHBox" type="HBoxContainer" parent="TopBar"]
+layout_mode = 2
+
+[node name="BackButton" type="Button" parent="TopBar/TopHBox"]
+layout_mode = 2
+text = "Назад"
+
+[node name="PlayerBlock" type="VBoxContainer" parent="TopBar/TopHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PlayerName" type="Label" parent="TopBar/TopHBox/PlayerBlock"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Игрок"
+
+[node name="PlayerHP" type="Label" parent="TopBar/TopHBox/PlayerBlock"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "HP: 0"
+
+[node name="EnemyBlock" type="VBoxContainer" parent="TopBar/TopHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="EnemyName" type="Label" parent="TopBar/TopHBox/EnemyBlock"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Противник"
+
+[node name="EnemyHP" type="Label" parent="TopBar/TopHBox/EnemyBlock"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "HP: 0"
+
+[node name="Arena" type="PanelContainer" parent="."]
+layout_mode = 1
+offset_left = 60.0
+offset_top = 190.0
+offset_right = 660.0
+offset_bottom = 830.0
+
+[node name="ArenaVBox" type="VBoxContainer" parent="Arena"]
+layout_mode = 2
+alignment = 1
+
+[node name="EnemySilhouette" type="ColorRect" parent="Arena/ArenaVBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 200)
+color = Color(0.35, 0.2, 0.2, 1)
+
+[node name="Spacer" type="Control" parent="Arena/ArenaVBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 40)
+
+[node name="PlayerSilhouette" type="ColorRect" parent="Arena/ArenaVBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 220)
+color = Color(0.18, 0.44, 0.36, 1)
+
+[node name="LogPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+offset_left = 36.0
+offset_top = 850.0
+offset_right = 684.0
+offset_bottom = 1060.0
+
+[node name="BattleLog" type="RichTextLabel" parent="LogPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+bbcode_enabled = false
+text = ""
+
+[node name="BottomBar" type="HBoxContainer" parent="."]
+layout_mode = 1
+offset_left = 30.0
+offset_top = 1100.0
+offset_right = 690.0
+offset_bottom = 1240.0
+theme_override_constants/separation = 10
+
+[node name="Skill1Button" type="Button" parent="BottomBar"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Лазурный разрез"
+
+[node name="Skill2Button" type="Button" parent="BottomBar"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Нефритовый щит"
+
+[node name="UltimateButton" type="Button" parent="BottomBar"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Цветение души"
+
+[connection signal="pressed" from="TopBar/TopHBox/BackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="BottomBar/Skill1Button" to="." method="_on_skill_1_pressed"]
+[connection signal="pressed" from="BottomBar/Skill2Button" to="." method="_on_skill_2_pressed"]
+[connection signal="pressed" from="BottomBar/UltimateButton" to="." method="_on_ultimate_pressed"]

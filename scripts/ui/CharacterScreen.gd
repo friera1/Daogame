@@ -21,7 +21,8 @@ func _ready() -> void:
 		"• Элемент: Металл / Свет\n" + \
 		"• VIP: %s\n" % str(profile.get("vip_level", 0)) + \
 		"• Сервер: %s\n" % str(profile.get("server_id", "s1")) + \
-		"• Титул: Наследник нефритового меча"
+		"• Титул: Наследник нефритового меча\n" + \
+		"• Снаряжение доступно на отдельном экране"
 
 func _apply_art() -> void:
 	var bg := ArtLoader.load_texture_safe(CHARACTER_BG_PATH)
@@ -30,6 +31,9 @@ func _apply_art() -> void:
 	var portrait := ArtLoader.load_texture_safe(PORTRAIT_ART_PATH)
 	if portrait != null:
 		portrait_art.texture = portrait
+
+func _on_equipment_pressed() -> void:
+	SceneRouter.goto_scene("res://scenes/equipment/EquipmentScreen.tscn")
 
 func _on_back_pressed() -> void:
 	SceneRouter.goto_scene("res://scenes/lobby/LobbyScreen.tscn")

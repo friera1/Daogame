@@ -30,7 +30,7 @@ func _build_item_row(entry: Dictionary) -> Control:
 
 	var rarity_label := Label.new()
 	var rarity := str(entry.get("rarity", "common"))
-		rarity_label.text = rarity
+	rarity_label.text = rarity
 	match rarity:
 		"legendary":
 			rarity_label.modulate = UITheme.COLOR_GOLD
@@ -42,7 +42,7 @@ func _build_item_row(entry: Dictionary) -> Control:
 			rarity_label.modulate = UITheme.COLOR_TEXT_SECONDARY
 
 	var lock_label := Label.new()
-	lock_label.text = "🔒" if bool(entry.get("locked", false)) else ""
+	lock_label.text = "LOCK" if bool(entry.get("locked", false)) else ""
 
 	row.add_child(name_label)
 	row.add_child(rarity_label)

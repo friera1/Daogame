@@ -2,6 +2,7 @@ extends Control
 
 const SHOP_BG_PATH := "res://assets/art/generated/lobby_background_primary.png"
 const SHOP_BANNER_PATH := "res://assets/art/generated/shop_banner_primary.png"
+const IconLoader = preload("res://scripts/ui/IconLoader.gd")
 
 @onready var offer_list: VBoxContainer = %OfferList
 @onready var detail_label: RichTextLabel = %DetailLabel
@@ -35,18 +36,25 @@ func _refresh() -> void:
 		var offer_id := str(offer.get("id", ""))
 		var row := HBoxContainer.new()
 		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var icon := TextureRect.new()
+		icon.custom_minimum_size = Vector2(44, 44)
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.texture = IconLoader.get_item_icon(str(offer.get("currency", "")))
 		var label := Label.new()
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		label.text = "%s · %s нефрита" % [str(offer.get("title", offer_id)), str(offer.get("price_jade", 0))]
 		label.add_theme_color_override("font_color", UITheme.COLOR_TEXT)
 		var open_button := Button.new()
 		open_button.text = "Детали"
+		open_button.icon = IconLoader.get_skill_icon("jade_guard")
 		open_button.pressed.connect(_show_offer.bind(offer_id))
 		var buy_button := Button.new()
 		buy_button.text = "Купить"
+		buy_button.icon = IconLoader.get_currency_icon("jade")
 		buy_button.modulate = UITheme.COLOR_GOLD
 		buy_button.add_theme_color_override("font_color", UITheme.COLOR_BG)
 		buy_button.pressed.connect(_buy_offer.bind(offer))
+		row.add_child(icon)
 		row.add_child(label)
 		row.add_child(open_button)
 		row.add_child(buy_button)

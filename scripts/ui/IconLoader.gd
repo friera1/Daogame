@@ -7,7 +7,9 @@ const ICON_PATHS := {
 	"bound_spirit_stone": "res://assets/ui/icons/bound_spirit_stone.b64",
 	"jade": "res://assets/ui/icons/jade.b64",
 	"azure_slash": "res://assets/ui/icons/azure_slash.b64",
-	"jade_guard": "res://assets/ui/icons/jade_guard.b64"
+	"jade_guard": "res://assets/ui/icons/jade_guard.b64",
+	"story_marker": "res://assets/ui/icons/story_marker.b64",
+	"pet_marker": "res://assets/ui/icons/pet_marker.b64"
 }
 
 static func get_icon(id: String) -> Texture2D:
@@ -38,7 +40,7 @@ static func get_currency_icon(currency_id: String) -> Texture2D:
 		"jade":
 			return get_icon("jade")
 		_:
-			return null
+			return get_icon("jade")
 
 static func get_skill_icon(skill_id: String) -> Texture2D:
 	match skill_id:
@@ -47,9 +49,18 @@ static func get_skill_icon(skill_id: String) -> Texture2D:
 		"jade_guard":
 			return get_icon("jade_guard")
 		"soul_bloom":
-			return get_icon("jade")
+			return get_icon("story_marker")
 		_:
 			return get_icon("azure_slash")
+
+static func get_pet_icon(pet_id: String) -> Texture2D:
+	match pet_id:
+		"jade_crane":
+			return get_icon("story_marker")
+		"ember_fox":
+			return get_icon("pet_marker")
+		_:
+			return get_icon("pet_marker")
 
 static func get_item_icon(item_id: String) -> Texture2D:
 	match item_id:
@@ -58,6 +69,6 @@ static func get_item_icon(item_id: String) -> Texture2D:
 		"breakthrough_stone":
 			return get_icon("spirit_stone")
 		"qi_pill_small":
-			return get_icon("jade")
+			return get_icon("story_marker")
 		_:
 			return get_icon("spirit_stone")

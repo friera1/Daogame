@@ -203,19 +203,54 @@ func equip_pet(pet_id: String) -> void:
 	save_profile()
 	emit_signal("pets_changed")
 
-func grant_summon_reward(reward: Dictionary) -> String:
+func _reward_rarity(reward_type: String, reward_id: String) -> String:
+	if reward_type == "pet":
+		for pet in ConfigRepository.pets.get("pets", []):
+			if str(pet.get("id", "")) == reward_id:
+				return str(pet.get("rarity", "rare"))
+		return "rare"
+	for item in ConfigRepository.items.get("items", []):
+		if str(item.get("id", "")) == reward_id:
+			return str(item.get("rarity", "rare"))
+	return "rare"
+
+func grant_summon_reward(reward: Dictionary) -> Dictionary:
 	var reward_type := str(reward.get("type", "item"))
 	var reward_id := str(reward.get("id", ""))
+	var rarity := _reward_rarity(reward_type, reward_id)
+	var result := {
+		"type": reward_type,
+		"id": reward_id,
+		"rarity": rarity,
+		"is_new": false,
+		"duplicate": false,
+		"status": "item",
+		"text": ""
+	}
 	if reward_type == "pet":
 		if add_pet(reward_id):
-			return "%s добавлен в питомцы" % reward_id
+			result["is_new"] = true
+			result["status"] = "new_pet"
+			result["text"] = "%s добавлен в питомцы" % reward_id
+			return result
 		add_inventory_item("breakthrough_stone", 1, "epic")
-		return "%s уже был у тебя, выдан камень прорыва" % reward_id
-	var rarity := "rare"
+		result["duplicate"] = true
+		result["status"] = "duplicate_pet"
+		result["text"] = "%s уже был у тебя, выдан камень прорыва" % reward_id
+		return result
 	if reward_id == "breakthrough_stone":
 		rarity = "epic"
-	elif reward_id == "spirit_stone":
+		result["rarity"] = rarity
+		add_inventory_item(reward_id, 1, rarity)
+		result["status"] = "epic_item"
+		result["text"] = "%s x1" % reward_id
+		return result
+	if reward_id == "spirit_stone":
 		add_currency("spirit_stone", 10)
-		return "spirit_stone x10"
+		result["status"] = "currency"
+		result["text"] = "spirit_stone x10"
+		return result
 	add_inventory_item(reward_id, 1, rarity)
-	return "%s x1" % reward_id
+	result["status"] = "item"
+	result["text"] = "%s x1" % reward_id
+	return result

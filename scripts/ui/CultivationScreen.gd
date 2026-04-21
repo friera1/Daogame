@@ -3,6 +3,9 @@ extends Control
 @onready var stage_label: Label = %StageLabel
 @onready var qi_label: Label = %QiLabel
 @onready var status_label: Label = %StatusLabel
+@onready var body_label: Label = %BodyLabel
+@onready var spirit_label: Label = %SpiritLabel
+@onready var dao_label: Label = %DaoLabel
 @onready var cultivate_button: Button = %CultivateButton
 @onready var breakthrough_button: Button = %BreakthroughButton
 
@@ -14,6 +17,9 @@ func _refresh() -> void:
 	var cult := PlayerState.get_cultivation()
 	stage_label.text = ConfigRepository.get_stage_name(str(cult.get("current_stage_id", "")))
 	qi_label.text = "Ци: %d / %d" % [int(cult.get("qi_exp", 0)), int(cult.get("qi_exp_required", 1))]
+	body_label.text = "Тело: %d" % int(cult.get("body_refinement_level", 0))
+	spirit_label.text = "Дух: %d" % int(cult.get("spirit_refinement_level", 0))
+	dao_label.text = "Дао-сердце: %d" % int(cult.get("dao_heart_level", 0))
 	var ready := bool(cult.get("breakthrough_ready", false))
 	status_label.text = "Прорыв готов" if ready else "Нужна дальнейшая культивация"
 	status_label.modulate = UITheme.COLOR_SUCCESS if ready else UITheme.COLOR_TEXT
@@ -32,5 +38,20 @@ func _on_cultivate_pressed() -> void:
 	status_label.modulate = UITheme.COLOR_SUCCESS
 
 func _on_breakthrough_pressed() -> void:
-	status_label.text = "Анимация прорыва и новая стадия будут следующим шагом"
+	status_label.text = "Безопасный прорыв будет следующим шагом vertical slice"
 	status_label.modulate = UITheme.COLOR_GOLD
+
+func _on_body_pressed() -> void:
+	PlayerState.refine_body()
+	status_label.text = "Тело укреплено"
+	status_label.modulate = UITheme.COLOR_SUCCESS
+
+func _on_spirit_pressed() -> void:
+	PlayerState.refine_spirit()
+	status_label.text = "Дух очищен"
+	status_label.modulate = UITheme.COLOR_SUCCESS
+
+func _on_dao_pressed() -> void:
+	PlayerState.refine_dao_heart()
+	status_label.text = "Дао-сердце стало сильнее"
+	status_label.modulate = UITheme.COLOR_SUCCESS

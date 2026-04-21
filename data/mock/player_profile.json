@@ -23,6 +23,12 @@
     "spirit_refinement_level": 3,
     "dao_heart_level": 2
   },
+  "equipment": {
+    "weapon": "jade_sword_01",
+    "armor": "cloud_robe_01",
+    "boots": "immortal_boots_01",
+    "ring": "jade_ring_01"
+  },
   "inventory": [
     {
       "item_uid": "itm_1001_abc",
@@ -43,6 +49,27 @@
       "item_id": "breakthrough_stone",
       "quantity": 4,
       "rarity": "epic",
+      "locked": false
+    },
+    {
+      "item_uid": "itm_1004_jkl",
+      "item_id": "cloud_robe_01",
+      "quantity": 1,
+      "rarity": "epic",
+      "locked": false
+    },
+    {
+      "item_uid": "itm_1005_mno",
+      "item_id": "immortal_boots_01",
+      "quantity": 1,
+      "rarity": "epic",
+      "locked": false
+    },
+    {
+      "item_uid": "itm_1006_pqr",
+      "item_id": "jade_ring_01",
+      "quantity": 1,
+      "rarity": "rare",
       "locked": false
     }
   ],

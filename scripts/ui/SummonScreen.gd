@@ -9,6 +9,7 @@ const IconLoader = preload("res://scripts/ui/IconLoader.gd")
 @onready var summon_background_art: TextureRect = %SummonBackgroundArt
 @onready var banner_art: TextureRect = %BannerArt
 @onready var header_title: Label = %HeaderTitle
+@onready var result_list: VBoxContainer = %ResultList
 @onready var pull_once_button: Button = %PullOnceButton
 @onready var pull_ten_button: Button = %PullTenButton
 
@@ -26,12 +27,14 @@ func _ready() -> void:
 		current_banner = banners[0]
 		banner_label.text = str(current_banner.get("title", "Призыв"))
 		_refresh_info("Готов к призыву")
+	_clear_results_placeholder()
 
 func _apply_visual_polish() -> void:
 	header_title.add_theme_color_override("font_color", UITheme.COLOR_GOLD)
 	header_title.add_theme_font_size_override("font_size", 28)
 	banner_label.add_theme_color_override("font_color", UITheme.COLOR_GOLD)
 	banner_label.add_theme_font_size_override("font_size", 24)
+	$Panel/VBox/ResultPanel.add_theme_stylebox_override("panel", UITheme.make_card_style(UITheme.COLOR_GOLD_DARK))
 
 func _apply_art() -> void:
 	var bg := ArtLoader.load_texture_safe(SUMMON_BG_PATH)
@@ -66,6 +69,69 @@ func _refresh_info(message: String) -> void:
 	pull_once_button.disabled = balance < cost
 	pull_ten_button.disabled = balance < cost * 10
 
+func _clear_results_placeholder() -> void:
+	for child in result_list.get_children():
+		child.queue_free()
+	var label := Label.new()
+	label.text = "Здесь появятся результаты призыва"
+	label.modulate = UITheme.COLOR_TEXT_SECONDARY
+	result_list.add_child(label)
+
+func _show_results(results: Array) -> void:
+	for child in result_list.get_children():
+		child.queue_free()
+	for entry in results:
+		var card := PanelContainer.new()
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var border := _result_border(str(entry.get("rarity", "rare")), bool(entry.get("is_new", false)))
+		UITheme.apply_card(card, border)
+		var row := HBoxContainer.new()
+		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_theme_constant_override("separation", 10)
+		card.add_child(row)
+		var icon := TextureRect.new()
+		icon.custom_minimum_size = Vector2(40, 40)
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.texture = _result_icon(entry)
+		var label := Label.new()
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var badge := "[НОВОЕ]" if bool(entry.get("is_new", false)) else "[ДУБЛЬ]" if bool(entry.get("duplicate", false)) else "[ПРЕДМЕТ]"
+		label.text = "%s %s" % [badge, str(entry.get("text", "Награда"))]
+		row.add_child(icon)
+		row.add_child(label)
+		result_list.add_child(card)
+
+func _result_border(rarity: String, is_new: bool) -> Color:
+	if is_new:
+		return UITheme.COLOR_GOLD
+	match rarity:
+		"epic":
+			return Color(0.74, 0.52, 0.95, 1)
+		"rare":
+			return Color(0.47, 0.8, 1.0, 1)
+		_:
+			return UITheme.COLOR_JADE_DARK
+
+func _result_icon(entry: Dictionary) -> Texture2D:
+	var reward_type := str(entry.get("type", "item"))
+	var reward_id := str(entry.get("id", ""))
+	if reward_type == "pet":
+		return IconLoader.get_pet_icon(reward_id)
+	return IconLoader.get_item_icon(reward_id)
+
+func _reward_rarity(reward: Dictionary) -> String:
+	var reward_type := str(reward.get("type", "item"))
+	var reward_id := str(reward.get("id", ""))
+	if reward_type == "pet":
+		for pet in ConfigRepository.pets.get("pets", []):
+			if str(pet.get("id", "")) == reward_id:
+				return str(pet.get("rarity", "rare"))
+		return "rare"
+	for item in ConfigRepository.items.get("items", []):
+		if str(item.get("id", "")) == reward_id:
+			return str(item.get("rarity", "rare"))
+	return "rare"
+
 func _on_pull_once_pressed() -> void:
 	var cost := int(current_banner.get("cost_per_pull", 10))
 	var currency_id := str(current_banner.get("currency", "jade"))
@@ -74,7 +140,20 @@ func _on_pull_once_pressed() -> void:
 		return
 	pity_counter += 1
 	var reward := _resolve_reward()
+	var was_new := false
+	var duplicate := false
+	if str(reward.get("type", "item")) == "pet":
+		was_new = not PlayerState.has_pet(str(reward.get("id", "")))
+		duplicate = not was_new
 	var result_text := PlayerState.grant_summon_reward(reward)
+	_show_results([{
+		"type": str(reward.get("type", "item")),
+		"id": str(reward.get("id", "")),
+		"text": result_text,
+		"rarity": _reward_rarity(reward),
+		"is_new": was_new,
+		"duplicate": duplicate
+	}])
 	_refresh_info("Получено: %s" % result_text)
 
 func _resolve_reward() -> Dictionary:
@@ -96,7 +175,7 @@ func _resolve_reward() -> Dictionary:
 	return pool[0]
 
 func _on_pull_ten_pressed() -> void:
-	var results: Array[String] = []
+	var results: Array = []
 	for i in range(10):
 		var cost := int(current_banner.get("cost_per_pull", 10))
 		if int(PlayerState.get_currencies().get(str(current_banner.get("currency", "jade")), 0)) < cost:
@@ -104,11 +183,25 @@ func _on_pull_ten_pressed() -> void:
 		PlayerState.spend_currency(str(current_banner.get("currency", "jade")), cost)
 		pity_counter += 1
 		var reward := _resolve_reward()
-		results.append(PlayerState.grant_summon_reward(reward))
+		var was_new := false
+		var duplicate := false
+		if str(reward.get("type", "item")) == "pet":
+			was_new = not PlayerState.has_pet(str(reward.get("id", "")))
+			duplicate = not was_new
+		var result_text := PlayerState.grant_summon_reward(reward)
+		results.append({
+			"type": str(reward.get("type", "item")),
+			"id": str(reward.get("id", "")),
+			"text": result_text,
+			"rarity": _reward_rarity(reward),
+			"is_new": was_new,
+			"duplicate": duplicate
+		})
 	if results.is_empty():
 		_refresh_info("Недостаточно валюты для x10 призыва")
 		return
-	_refresh_info("Серия призыва:\n• %s" % "\n• ".join(results))
+	_show_results(results)
+	_refresh_info("Серия призыва завершена")
 
 func _on_back_pressed() -> void:
 	SceneRouter.goto_scene("res://scenes/lobby/LobbyScreen.tscn")

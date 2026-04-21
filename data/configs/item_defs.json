@@ -8,6 +8,27 @@
       "atk": 120
     },
     {
+      "id": "cloud_robe_01",
+      "name": "Одеяние облачного пути",
+      "type": "armor",
+      "rarity": "epic",
+      "def": 85
+    },
+    {
+      "id": "immortal_boots_01",
+      "name": "Сапоги бессмертного шага",
+      "type": "boots",
+      "rarity": "epic",
+      "speed": 22
+    },
+    {
+      "id": "jade_ring_01",
+      "name": "Нефритовое кольцо духа",
+      "type": "ring",
+      "rarity": "rare",
+      "qi_bonus": 12
+    },
+    {
       "id": "spirit_stone",
       "name": "Духовный камень",
       "type": "currency"

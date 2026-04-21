@@ -21,7 +21,11 @@ func _refresh() -> void:
 		var upgrade_button := Button.new()
 		upgrade_button.text = "Усилить"
 		upgrade_button.pressed.connect(_on_upgrade_pressed.bind(skill_id))
+		var show_button := Button.new()
+		show_button.text = "Детали"
+		show_button.pressed.connect(_show_skill.bind(skill_id))
 		row.add_child(name_label)
+		row.add_child(show_button)
 		row.add_child(upgrade_button)
 		list_container.add_child(row)
 	if skills.size() > 0:
@@ -43,7 +47,7 @@ func _show_skill(skill_id: String) -> void:
 				str(skill.get("element", skill.get("effect", "neutral")))
 			]
 			return
-	 detail_label.text = "Навык не найден"
+	detail_label.text = "Навык не найден"
 
 func _on_upgrade_pressed(skill_id: String) -> void:
 	if PlayerState.upgrade_skill(skill_id):

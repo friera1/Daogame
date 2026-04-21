@@ -52,43 +52,63 @@ func _apply_button_styles() -> void:
 func _refresh_info(message: String) -> void:
 	var cost := int(current_banner.get("cost_per_pull", 10))
 	var pity_max := int(current_banner.get("pity", 30))
-	var ready_badge := "[ГОТОВО]" if int(PlayerState.get_currencies().get(str(current_banner.get("currency", "jade")), 0)) >= cost else "[НЕТ ВАЛЮТЫ]"
+	var currency_id := str(current_banner.get("currency", "jade"))
+	var balance := int(PlayerState.get_currencies().get(currency_id, 0))
+	var ready_badge := "[ГОТОВО]" if balance >= cost else "[НЕТ ВАЛЮТЫ]"
 	var pity_badge := "[PITY ГОТОВ]" if pity_counter >= pity_max else "[PITY %d/%d]" % [pity_counter, pity_max]
 	info_label.text = "[b]%s[/b]\n\n%s\nВалюта: %s\nЦена: %s\n%s" % [
 		message,
 		ready_badge,
-		str(current_banner.get("currency", "jade")),
+		currency_id,
 		str(cost),
 		pity_badge
 	]
-	var can_pull := int(PlayerState.get_currencies().get(str(current_banner.get("currency", "jade")), 0)) >= cost
-	pull_once_button.disabled = not can_pull
-	pull_ten_button.disabled = int(PlayerState.get_currencies().get(str(current_banner.get("currency", "jade")), 0)) < cost * 10
+	pull_once_button.disabled = balance < cost
+	pull_ten_button.disabled = balance < cost * 10
 
 func _on_pull_once_pressed() -> void:
 	var cost := int(current_banner.get("cost_per_pull", 10))
-	if not PlayerState.spend_currency(str(current_banner.get("currency", "jade")), cost):
+	var currency_id := str(current_banner.get("currency", "jade"))
+	if not PlayerState.spend_currency(currency_id, cost):
 		_refresh_info("Недостаточно валюты для призыва")
 		return
 	pity_counter += 1
 	var reward := _resolve_reward()
-	_refresh_info("Получено: %s" % reward)
+	var result_text := PlayerState.grant_summon_reward(reward)
+	_refresh_info("Получено: %s" % result_text)
 
-func _resolve_reward() -> String:
+func _resolve_reward() -> Dictionary:
 	var pool := current_banner.get("pool", [])
 	if pity_counter >= int(current_banner.get("pity", 30)) and pool.size() > 0:
 		pity_counter = 0
-		return str(pool[0].get("id", "reward"))
+		return pool[0]
 	if pool.size() == 0:
-		return "пусто"
-	var index := randi() % pool.size()
-	return str(pool[index].get("id", "reward"))
+		return {"type": "item", "id": "spirit_stone"}
+	var total_weight := 0
+	for entry in pool:
+		total_weight += int(entry.get("weight", 1))
+	var roll := randi() % max(total_weight, 1)
+	var cursor := 0
+	for entry in pool:
+		cursor += int(entry.get("weight", 1))
+		if roll < cursor:
+			return entry
+	return pool[0]
 
 func _on_pull_ten_pressed() -> void:
+	var results: Array[String] = []
 	for i in range(10):
-		if pull_once_button.disabled:
+		var cost := int(current_banner.get("cost_per_pull", 10))
+		if int(PlayerState.get_currencies().get(str(current_banner.get("currency", "jade")), 0)) < cost:
 			break
-		_on_pull_once_pressed()
+		PlayerState.spend_currency(str(current_banner.get("currency", "jade")), cost)
+		pity_counter += 1
+		var reward := _resolve_reward()
+		results.append(PlayerState.grant_summon_reward(reward))
+	if results.is_empty():
+		_refresh_info("Недостаточно валюты для x10 призыва")
+		return
+	_refresh_info("Серия призыва:\n• %s" % "\n• ".join(results))
 
 func _on_back_pressed() -> void:
 	SceneRouter.goto_scene("res://scenes/lobby/LobbyScreen.tscn")

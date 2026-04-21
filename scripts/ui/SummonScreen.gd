@@ -1,17 +1,31 @@
 extends Control
 
+const SUMMON_BG_PATH := "res://assets/art/generated/lobby_background_primary.png"
+const SUMMON_BANNER_PATH := "res://assets/art/generated/summon_banner_primary.png"
+
 @onready var banner_label: Label = %BannerLabel
 @onready var info_label: RichTextLabel = %InfoLabel
+@onready var summon_background_art: TextureRect = %SummonBackgroundArt
+@onready var banner_art: TextureRect = %BannerArt
 
 var current_banner: Dictionary = {}
 var pity_counter := 0
 
 func _ready() -> void:
+	_apply_art()
 	var banners := ConfigRepository.summon_pools.get("banners", [])
 	if banners.size() > 0:
 		current_banner = banners[0]
 		banner_label.text = str(current_banner.get("title", "Призыв"))
 		_refresh_info("Готов к призыву")
+
+func _apply_art() -> void:
+	var bg := ArtLoader.load_texture_safe(SUMMON_BG_PATH)
+	if bg != null:
+		summon_background_art.texture = bg
+	var banner := ArtLoader.load_texture_safe(SUMMON_BANNER_PATH)
+	if banner != null:
+		banner_art.texture = banner
 
 func _refresh_info(message: String) -> void:
 	info_label.text = "[b]%s[/b]\n\nВалюта: %s\nЦена: %s\nPity: %d / %d" % [

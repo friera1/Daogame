@@ -1,6 +1,7 @@
 extends Control
 
 const CULTIVATION_BG_PATH := "res://assets/art/generated/cultivation_background_primary.png"
+const IconLoader = preload("res://scripts/ui/IconLoader.gd")
 
 @onready var stage_label: Label = %StageLabel
 @onready var qi_label: Label = %QiLabel
@@ -15,6 +16,8 @@ const CULTIVATION_BG_PATH := "res://assets/art/generated/cultivation_background_
 
 func _ready() -> void:
 	_apply_art()
+	cultivate_button.icon = IconLoader.get_skill_icon("azure_slash")
+	breakthrough_button.icon = IconLoader.get_item_icon("breakthrough_stone")
 	_refresh()
 	PlayerState.cultivation_changed.connect(_refresh)
 

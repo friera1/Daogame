@@ -16,9 +16,12 @@ func _refresh() -> void:
 	var pets := PlayerState.get_pets()
 	for pet in pets:
 		var pet_id := str(pet.get("pet_id", ""))
+		var shards := PlayerState.get_pet_shards_for(pet_id)
+		var can_merge := shards >= 3
+		var badge := "[АКТИВЕН]" if bool(pet.get("equipped", false)) else "[ГОТОВ К СЛИЯНИЮ]" if can_merge else "[ОСКОЛКИ %d/3]" % shards
 		var card := PanelContainer.new()
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		UITheme.apply_card(card, UITheme.COLOR_JADE_DARK)
+		UITheme.apply_card(card, UITheme.COLOR_GOLD_DARK if can_merge else UITheme.COLOR_JADE_DARK)
 		var row := HBoxContainer.new()
 		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_theme_constant_override("separation", 12)
@@ -29,12 +32,18 @@ func _refresh() -> void:
 		icon.texture = IconLoader.get_pet_icon(pet_id)
 		var label := Label.new()
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		label.text = "%s · ур. %d · ★%d" % [_get_pet_name(pet_id), int(pet.get("level", 1)), int(pet.get("stars", 1))]
+		label.text = "%s %s · ур. %d · ★%d" % [badge, _get_pet_name(pet_id), int(pet.get("level", 1)), int(pet.get("stars", 1))]
 		var details_button := Button.new()
 		details_button.text = "Детали"
 		details_button.icon = IconLoader.get_skill_icon("jade_guard")
 		UITheme.apply_accent_button(details_button, false)
 		details_button.pressed.connect(_show_pet.bind(pet_id))
+		var merge_button := Button.new()
+		merge_button.text = "Слияние"
+		merge_button.icon = IconLoader.get_currency_icon("jade")
+		UITheme.apply_accent_button(merge_button, true)
+		merge_button.disabled = not can_merge
+		merge_button.pressed.connect(_merge_pet.bind(pet_id))
 		var equip_button := Button.new()
 		equip_button.text = "Активен" if bool(pet.get("equipped", false)) else "Выбрать"
 		equip_button.icon = IconLoader.get_skill_icon("azure_slash")
@@ -43,6 +52,7 @@ func _refresh() -> void:
 		row.add_child(icon)
 		row.add_child(label)
 		row.add_child(details_button)
+		row.add_child(merge_button)
 		row.add_child(equip_button)
 		pet_list.add_child(card)
 	if pets.size() > 0:
@@ -55,17 +65,26 @@ func _get_pet_name(pet_id: String) -> String:
 	return pet_id
 
 func _show_pet(pet_id: String) -> void:
+	var shards := PlayerState.get_pet_shards_for(pet_id)
 	for pet in ConfigRepository.pets.get("pets", []):
 		if str(pet.get("id", "")) == pet_id:
-			detail_label.text = "[b]%s[/b]\n\nРедкость: %s\nЭлемент: %s\nРоль: %s\nПассив: %s" % [
+			detail_label.text = "[b]%s[/b]\n\nРедкость: %s\nЭлемент: %s\nРоль: %s\nПассив: %s\nОсколки: %d / 3" % [
 				str(pet.get("name", pet_id)),
 				str(pet.get("rarity", "common")),
 				str(pet.get("element", "neutral")),
 				str(pet.get("role", "support")),
-				str(pet.get("passive", "-"))
+				str(pet.get("passive", "-")),
+				shards
 			]
 			return
 	detail_label.text = "Питомец не найден"
+
+func _merge_pet(pet_id: String) -> void:
+	if PlayerState.evolve_pet_with_shards(pet_id):
+		detail_label.text = "[b]Слияние успешно[/b]\n\nПитомец %s получил новую звезду." % _get_pet_name(pet_id)
+		_refresh()
+		return
+	detail_label.text = "[b]Недостаточно осколков[/b]\n\nДля слияния требуется 3 осколка."
 
 func _equip_pet(pet_id: String) -> void:
 	PlayerState.equip_pet(pet_id)

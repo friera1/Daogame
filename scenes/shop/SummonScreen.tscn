@@ -18,6 +18,15 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 color = Color(0.0431373, 0.0705882, 0.0588235, 1)
 
+[node name="SummonBackgroundArt" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+stretch_mode = 6
+expand_mode = 1
+self_modulate = Color(1, 1, 1, 0.42)
+
 [node name="Panel" type="PanelContainer" parent="."]
 layout_mode = 1
 offset_left = 36.0
@@ -40,6 +49,25 @@ text = "Назад"
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Призыв"
+
+[node name="BannerPanel" type="PanelContainer" parent="Panel/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 260)
+
+[node name="BannerArt" type="TextureRect" parent="Panel/VBox/BannerPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+stretch_mode = 5
+expand_mode = 1
+
+[node name="BannerTint" type="ColorRect" parent="Panel/VBox/BannerPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.1, 0.18, 0.16, 0.34)
 
 [node name="BannerLabel" type="Label" parent="Panel/VBox"]
 unique_name_in_owner = true

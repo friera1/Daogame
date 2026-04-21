@@ -3,6 +3,7 @@ extends Control
 const LOBBY_BG_PATH := "res://assets/art/generated/lobby_background_primary.png"
 const HERO_ART_PATH := "res://assets/art/generated/hero_fullbody_primary.png"
 const TUTORIAL_OVERLAY_SCENE := preload("res://scenes/tutorial/TutorialOverlay.tscn")
+const IconLoader = preload("res://scripts/ui/IconLoader.gd")
 
 @onready var name_label: Label = %NameLabel
 @onready var level_label: Label = %LevelLabel
@@ -19,11 +20,15 @@ const TUTORIAL_OVERLAY_SCENE := preload("res://scenes/tutorial/TutorialOverlay.t
 @onready var hero_hint: Label = %HeroHint
 @onready var hero_title: Label = %HeroTitle
 @onready var hero_silhouette: ColorRect = %HeroSilhouette
+@onready var spirit_stone_icon: TextureRect = %SpiritStoneIcon
+@onready var bound_stone_icon: TextureRect = %BoundStoneIcon
+@onready var jade_icon: TextureRect = %JadeIcon
 
 func _ready() -> void:
 	UITheme.apply_lobby_style(self)
 	_apply_visual_polish()
 	_apply_art()
+	_apply_icons()
 	_refresh()
 	PlayerState.player_loaded.connect(_refresh)
 	PlayerState.cultivation_changed.connect(_refresh)
@@ -58,6 +63,27 @@ func _apply_art() -> void:
 	if hero != null:
 		hero_art.texture = hero
 		hero_hint.text = ""
+
+func _apply_icons() -> void:
+	spirit_stone_icon.texture = IconLoader.get_currency_icon("spirit_stone")
+	bound_stone_icon.texture = IconLoader.get_currency_icon("bound_spirit_stone")
+	jade_icon.texture = IconLoader.get_currency_icon("jade")
+	cta_button.icon = IconLoader.get_skill_icon("azure_slash")
+	$LeftMenu/StoryButton.icon = IconLoader.get_skill_icon("jade_guard")
+	$LeftMenu/EventsButton.icon = IconLoader.get_item_icon("breakthrough_stone")
+	$LeftMenu/GuildButton.icon = IconLoader.get_currency_icon("jade")
+	$LeftMenu/DailyButton.icon = IconLoader.get_currency_icon("bound_spirit_stone")
+	$LeftMenu/BattleButton.icon = IconLoader.get_skill_icon("azure_slash")
+	$RightMenu/InventoryButton.icon = IconLoader.get_item_icon("breakthrough_stone")
+	$RightMenu/SkillsButton.icon = IconLoader.get_skill_icon("azure_slash")
+	$RightMenu/PetButton.icon = IconLoader.get_currency_icon("jade")
+	$RightMenu/ShopButton.icon = IconLoader.get_currency_icon("spirit_stone")
+	$RightMenu/SummonButton.icon = IconLoader.get_currency_icon("jade")
+	$BottomNav/CharacterButton.icon = IconLoader.get_currency_icon("jade")
+	$BottomNav/BottomStoryButton.icon = IconLoader.get_skill_icon("jade_guard")
+	$BottomNav/BottomGuildButton.icon = IconLoader.get_currency_icon("jade")
+	$BottomNav/BottomHomeButton.icon = IconLoader.get_currency_icon("bound_spirit_stone")
+	$BottomNav/SocialButton.icon = IconLoader.get_currency_icon("spirit_stone")
 
 func _refresh() -> void:
 	name_label.text = PlayerState.get_name()

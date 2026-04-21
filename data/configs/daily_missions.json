@@ -1,0 +1,8 @@
+{
+  "missions": [
+    {"id": "daily_login", "title": "Войти в игру", "target": 1, "reward_gold": 1000},
+    {"id": "daily_cultivate", "title": "Культивировать 3 раза", "target": 3, "reward_gold": 2400},
+    {"id": "daily_battle", "title": "Победить в бою 2 раза", "target": 2, "reward_gold": 3000},
+    {"id": "daily_skill", "title": "Усилить навык 1 раз", "target": 1, "reward_gold": 1800}
+  ]
+}

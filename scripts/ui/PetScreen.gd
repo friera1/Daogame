@@ -20,7 +20,7 @@ func _refresh() -> void:
 		var icon := TextureRect.new()
 		icon.custom_minimum_size = Vector2(48, 48)
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.texture = IconLoader.get_currency_icon("jade")
+		icon.texture = IconLoader.get_pet_icon(pet_id)
 		var label := Label.new()
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		label.text = "%s · ур. %d · ★%d" % [_get_pet_name(pet_id), int(pet.get("level", 1)), int(pet.get("stars", 1))]

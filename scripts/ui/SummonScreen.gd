@@ -83,7 +83,7 @@ func _show_results(results: Array) -> void:
 	for entry in results:
 		var card := PanelContainer.new()
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var border := _result_border(str(entry.get("rarity", "rare")), bool(entry.get("is_new", false)))
+		var border := _result_border(str(entry.get("rarity", "rare")), str(entry.get("status", "item")))
 		UITheme.apply_card(card, border)
 		var row := HBoxContainer.new()
 		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -95,15 +95,29 @@ func _show_results(results: Array) -> void:
 		icon.texture = _result_icon(entry)
 		var label := Label.new()
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var badge := "[НОВОЕ]" if bool(entry.get("is_new", false)) else "[ДУБЛЬ]" if bool(entry.get("duplicate", false)) else "[ПРЕДМЕТ]"
-		label.text = "%s %s" % [badge, str(entry.get("text", "Награда"))]
+		label.text = "%s %s" % [_result_badge(str(entry.get("status", "item"))), str(entry.get("text", "Награда"))]
 		row.add_child(icon)
 		row.add_child(label)
 		result_list.add_child(card)
 
-func _result_border(rarity: String, is_new: bool) -> Color:
-	if is_new:
+func _result_badge(status: String) -> String:
+	match status:
+		"new_pet":
+			return "[НОВЫЙ ПИТОМЕЦ]"
+		"duplicate_pet":
+			return "[ДУБЛЬ → КОМПЕНСАЦИЯ]"
+		"epic_item":
+			return "[ЭПИК]"
+		"currency":
+			return "[ВАЛЮТА]"
+		_:
+			return "[ПРЕДМЕТ]"
+
+func _result_border(rarity: String, status: String) -> Color:
+	if status == "new_pet":
 		return UITheme.COLOR_GOLD
+	if status == "duplicate_pet":
+		return UITheme.COLOR_GOLD_DARK
 	match rarity:
 		"epic":
 			return Color(0.74, 0.52, 0.95, 1)
@@ -119,19 +133,6 @@ func _result_icon(entry: Dictionary) -> Texture2D:
 		return IconLoader.get_pet_icon(reward_id)
 	return IconLoader.get_item_icon(reward_id)
 
-func _reward_rarity(reward: Dictionary) -> String:
-	var reward_type := str(reward.get("type", "item"))
-	var reward_id := str(reward.get("id", ""))
-	if reward_type == "pet":
-		for pet in ConfigRepository.pets.get("pets", []):
-			if str(pet.get("id", "")) == reward_id:
-				return str(pet.get("rarity", "rare"))
-		return "rare"
-	for item in ConfigRepository.items.get("items", []):
-		if str(item.get("id", "")) == reward_id:
-			return str(item.get("rarity", "rare"))
-	return "rare"
-
 func _on_pull_once_pressed() -> void:
 	var cost := int(current_banner.get("cost_per_pull", 10))
 	var currency_id := str(current_banner.get("currency", "jade"))
@@ -140,21 +141,9 @@ func _on_pull_once_pressed() -> void:
 		return
 	pity_counter += 1
 	var reward := _resolve_reward()
-	var was_new := false
-	var duplicate := false
-	if str(reward.get("type", "item")) == "pet":
-		was_new = not PlayerState.has_pet(str(reward.get("id", "")))
-		duplicate = not was_new
-	var result_text := PlayerState.grant_summon_reward(reward)
-	_show_results([{
-		"type": str(reward.get("type", "item")),
-		"id": str(reward.get("id", "")),
-		"text": result_text,
-		"rarity": _reward_rarity(reward),
-		"is_new": was_new,
-		"duplicate": duplicate
-	}])
-	_refresh_info("Получено: %s" % result_text)
+	var result := PlayerState.grant_summon_reward(reward)
+	_show_results([result])
+	_refresh_info("Получено: %s" % str(result.get("text", "награда")))
 
 func _resolve_reward() -> Dictionary:
 	var pool := current_banner.get("pool", [])
@@ -183,20 +172,7 @@ func _on_pull_ten_pressed() -> void:
 		PlayerState.spend_currency(str(current_banner.get("currency", "jade")), cost)
 		pity_counter += 1
 		var reward := _resolve_reward()
-		var was_new := false
-		var duplicate := false
-		if str(reward.get("type", "item")) == "pet":
-			was_new = not PlayerState.has_pet(str(reward.get("id", "")))
-			duplicate = not was_new
-		var result_text := PlayerState.grant_summon_reward(reward)
-		results.append({
-			"type": str(reward.get("type", "item")),
-			"id": str(reward.get("id", "")),
-			"text": result_text,
-			"rarity": _reward_rarity(reward),
-			"is_new": was_new,
-			"duplicate": duplicate
-		})
+		results.append(PlayerState.grant_summon_reward(reward))
 	if results.is_empty():
 		_refresh_info("Недостаточно валюты для x10 призыва")
 		return

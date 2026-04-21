@@ -1,5 +1,8 @@
 extends Control
 
+const LOBBY_BG_PATH := "res://assets/art/generated/lobby_background_primary.png"
+const HERO_ART_PATH := "res://assets/art/generated/hero_fullbody_primary.png"
+
 @onready var name_label: Label = %NameLabel
 @onready var level_label: Label = %LevelLabel
 @onready var stage_label: Label = %StageLabel
@@ -10,8 +13,12 @@ extends Control
 @onready var jade_label: Label = %JadeLabel
 @onready var cta_button: Button = %MainCTAButton
 @onready var status_label: Label = %StatusLabel
+@onready var lobby_background_art: TextureRect = %LobbyBackgroundArt
+@onready var hero_art: TextureRect = %HeroArt
+@onready var hero_hint: Label = %HeroHint
 
 func _ready() -> void:
+	_apply_art()
 	_refresh()
 	PlayerState.player_loaded.connect(_refresh)
 	PlayerState.cultivation_changed.connect(_refresh)
@@ -19,6 +26,15 @@ func _ready() -> void:
 	PlayerState.skills_changed.connect(_refresh)
 	PlayerState.pets_changed.connect(_refresh)
 	_show_idle_status()
+
+func _apply_art() -> void:
+	var bg := ArtLoader.load_texture_safe(LOBBY_BG_PATH)
+	if bg != null:
+		lobby_background_art.texture = bg
+	var hero := ArtLoader.load_texture_safe(HERO_ART_PATH)
+	if hero != null:
+		hero_art.texture = hero
+		hero_hint.text = ""
 
 func _refresh() -> void:
 	name_label.text = PlayerState.get_name()

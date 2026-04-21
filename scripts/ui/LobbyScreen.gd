@@ -16,8 +16,12 @@ const HERO_ART_PATH := "res://assets/art/generated/hero_fullbody_primary.png"
 @onready var lobby_background_art: TextureRect = %LobbyBackgroundArt
 @onready var hero_art: TextureRect = %HeroArt
 @onready var hero_hint: Label = %HeroHint
+@onready var hero_title: Label = %HeroTitle
+@onready var hero_silhouette: ColorRect = %HeroSilhouette
 
 func _ready() -> void:
+	UITheme.apply_lobby_style(self)
+	_apply_visual_polish()
 	_apply_art()
 	_refresh()
 	PlayerState.player_loaded.connect(_refresh)
@@ -26,6 +30,16 @@ func _ready() -> void:
 	PlayerState.skills_changed.connect(_refresh)
 	PlayerState.pets_changed.connect(_refresh)
 	_show_idle_status()
+
+func _apply_visual_polish() -> void:
+	cta_button.add_theme_font_size_override("font_size", 28)
+	cta_button.add_theme_color_override("font_color", UITheme.COLOR_BG)
+	cta_button.modulate = UITheme.COLOR_GOLD
+	status_label.add_theme_color_override("font_color", UITheme.COLOR_GOLD)
+	hero_title.add_theme_color_override("font_color", UITheme.COLOR_GOLD)
+	hero_title.add_theme_font_size_override("font_size", 28)
+	hero_hint.add_theme_color_override("font_color", UITheme.COLOR_TEXT_SECONDARY)
+	hero_silhouette.color = Color(UITheme.COLOR_JADE_DARK, 0.22)
 
 func _apply_art() -> void:
 	var bg := ArtLoader.load_texture_safe(LOBBY_BG_PATH)
@@ -40,6 +54,7 @@ func _refresh() -> void:
 	name_label.text = PlayerState.get_name()
 	level_label.text = "Ур. %d" % PlayerState.get_level()
 	power_label.text = "Сила: %d" % PlayerState.get_power()
+	hero_title.text = PlayerState.get_name()
 
 	var cult := PlayerState.get_cultivation()
 	var stage_id := str(cult.get("current_stage_id", "mortal_early"))

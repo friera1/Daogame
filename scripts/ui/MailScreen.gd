@@ -24,11 +24,16 @@ func _load_mailbox() -> void:
 func _refresh() -> void:
 	for child in mail_list.get_children():
 		child.queue_free()
+	var claimed_count := 0
+	for message in mailbox.get("messages", []):
+		if bool(message.get("claimed", false)):
+			claimed_count += 1
 	for message in mailbox.get("messages", []):
 		var msg_id := str(message.get("id", ""))
 		var card := PanelContainer.new()
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var claimed := bool(message.get("claimed", false))
+		var badge := "[ПОЛУЧЕНО]" if claimed else "[НОВОЕ]"
 		UITheme.apply_card(card, UITheme.COLOR_GOLD_DARK if claimed else UITheme.COLOR_JADE_DARK)
 		var row := HBoxContainer.new()
 		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -40,7 +45,7 @@ func _refresh() -> void:
 		icon.texture = IconLoader.get_icon("story_marker")
 		var label := Label.new()
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		label.text = "%s%s" % [str(message.get("title", "Письмо")), " · получено" if claimed else ""]
+		label.text = "%s %s" % [badge, str(message.get("title", "Письмо"))]
 		var open_button := Button.new()
 		open_button.text = "Открыть"
 		open_button.icon = IconLoader.get_skill_icon("jade_guard")
@@ -51,6 +56,7 @@ func _refresh() -> void:
 		row.add_child(open_button)
 		mail_list.add_child(card)
 	if mailbox.get("messages", []).size() > 0:
+		detail_label.text = "Писем: %d · Получено: %d" % [mailbox.get("messages", []).size(), claimed_count]
 		_open_message(str(mailbox.get("messages", [])[0].get("id", "")))
 
 func _open_message(message_id: String) -> void:
@@ -58,7 +64,9 @@ func _open_message(message_id: String) -> void:
 		if str(message.get("id", "")) != message_id:
 			continue
 		var rewards := message.get("rewards", {})
-		detail_label.text = "[b]%s[/b]\nОт: %s\n\n%s\n\nНаграды: %s золота, %s связанных духовных камней" % [
+		var badge := "[ПОЛУЧЕНО]" if bool(message.get("claimed", false)) else "[НОВОЕ]"
+		detail_label.text = "%s [b]%s[/b]\nОт: %s\n\n%s\n\nНаграды: %s золота, %s связанных духовных камней" % [
+			badge,
 			str(message.get("title", "Письмо")),
 			str(message.get("from", "Система")),
 			str(message.get("body", "")),

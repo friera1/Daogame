@@ -2,12 +2,15 @@ extends Control
 
 const SUMMON_BG_PATH := "res://assets/art/generated/lobby_background_primary.png"
 const SUMMON_BANNER_PATH := "res://assets/art/generated/summon_banner_primary.png"
+const IconLoader = preload("res://scripts/ui/IconLoader.gd")
 
 @onready var banner_label: Label = %BannerLabel
 @onready var info_label: RichTextLabel = %InfoLabel
 @onready var summon_background_art: TextureRect = %SummonBackgroundArt
 @onready var banner_art: TextureRect = %BannerArt
 @onready var header_title: Label = %HeaderTitle
+@onready var pull_once_button: Button = %PullOnceButton
+@onready var pull_ten_button: Button = %PullTenButton
 
 var current_banner: Dictionary = {}
 var pity_counter := 0
@@ -16,6 +19,7 @@ func _ready() -> void:
 	UITheme.apply_lobby_style(self)
 	_apply_visual_polish()
 	_apply_art()
+	_apply_icons()
 	var banners := ConfigRepository.summon_pools.get("banners", [])
 	if banners.size() > 0:
 		current_banner = banners[0]
@@ -35,6 +39,10 @@ func _apply_art() -> void:
 	var banner := ArtLoader.load_texture_safe(SUMMON_BANNER_PATH)
 	if banner != null:
 		banner_art.texture = banner
+
+func _apply_icons() -> void:
+	pull_once_button.icon = IconLoader.get_currency_icon("jade")
+	pull_ten_button.icon = IconLoader.get_skill_icon("azure_slash")
 
 func _refresh_info(message: String) -> void:
 	info_label.text = "[b]%s[/b]\n\nВалюта: %s\nЦена: %s\nPity: %d / %d" % [

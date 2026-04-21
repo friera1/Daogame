@@ -27,7 +27,7 @@ offset_bottom = 1180.0
 
 [node name="VBox" type="VBoxContainer" parent="Panel"]
 layout_mode = 2
-theme_override_constants/separation = 16
+theme_override_constants/separation = 14
 
 [node name="Header" type="HBoxContainer" parent="Panel/VBox"]
 layout_mode = 2
@@ -43,7 +43,7 @@ text = "Культивация"
 
 [node name="MeditationArea" type="ColorRect" parent="Panel/VBox"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 420)
+custom_minimum_size = Vector2(0, 300)
 color = Color(0.184314, 0.435294, 0.364706, 1)
 
 [node name="StageLabel" type="Label" parent="Panel/VBox"]
@@ -56,6 +56,21 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "Ци: 0 / 0"
 
+[node name="BodyLabel" type="Label" parent="Panel/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Тело: 0"
+
+[node name="SpiritLabel" type="Label" parent="Panel/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Дух: 0"
+
+[node name="DaoLabel" type="Label" parent="Panel/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Дао-сердце: 0"
+
 [node name="StatusLabel" type="Label" parent="Panel/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -67,9 +82,28 @@ text = "Требуемые материалы"
 
 [node name="Materials" type="RichTextLabel" parent="Panel/VBox"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 120)
+custom_minimum_size = Vector2(0, 96)
 bbcode_enabled = true
 text = "• Связанные духовные камни x25\n• Камень прорыва x1\n• Пилюля Ци x2"
+
+[node name="SubtrackRow" type="HBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="BodyButton" type="Button" parent="Panel/VBox/SubtrackRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Укрепить тело"
+
+[node name="SpiritButton" type="Button" parent="Panel/VBox/SubtrackRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Очистить дух"
+
+[node name="DaoButton" type="Button" parent="Panel/VBox/SubtrackRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Усилить Дао"
 
 [node name="CultivateButton" type="Button" parent="Panel/VBox"]
 unique_name_in_owner = true
@@ -82,5 +116,8 @@ layout_mode = 2
 text = "Прорыв"
 
 [connection signal="pressed" from="Panel/VBox/Header/BackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="Panel/VBox/SubtrackRow/BodyButton" to="." method="_on_body_pressed"]
+[connection signal="pressed" from="Panel/VBox/SubtrackRow/SpiritButton" to="." method="_on_spirit_pressed"]
+[connection signal="pressed" from="Panel/VBox/SubtrackRow/DaoButton" to="." method="_on_dao_pressed"]
 [connection signal="pressed" from="Panel/VBox/CultivateButton" to="." method="_on_cultivate_pressed"]
 [connection signal="pressed" from="Panel/VBox/BreakthroughButton" to="." method="_on_breakthrough_pressed"]

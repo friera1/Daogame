@@ -85,6 +85,10 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "60"
 
+[node name="MailButton" type="Button" parent="TopBar/TopMargin/TopHBox"]
+layout_mode = 2
+text = "Почта"
+
 [node name="PowerLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 1
@@ -221,18 +225,19 @@ text = "Дом"
 layout_mode = 2
 text = "Общение"
 
+[connection signal="pressed" from="TopBar/TopMargin/TopHBox/MailButton" to="." method="_on_mail_pressed"]
 [connection signal="pressed" from="MainCTAButton" to="." method="_on_cultivation_pressed"]
 [connection signal="pressed" from="CharacterButton" to="." method="_on_character_pressed"]
 [connection signal="pressed" from="InventoryButton" to="." method="_on_inventory_pressed"]
 [connection signal="pressed" from="SkillsButton" to="." method="_on_skills_pressed"]
 [connection signal="pressed" from="PetButton" to="." method="_on_pets_pressed"]
 [connection signal="pressed" from="BattleButton" to="." method="_on_battle_pressed"]
-[connection signal="pressed" from="StoryButton" to="." method="_on_stub_pressed" binds=["История"]]
+[connection signal="pressed" from="StoryButton" to="." method="_on_story_pressed"]
+[connection signal="pressed" from="DailyButton" to="." method="_on_daily_pressed"]
 [connection signal="pressed" from="EventsButton" to="." method="_on_stub_pressed" binds=["События"]]
 [connection signal="pressed" from="GuildButton" to="." method="_on_stub_pressed" binds=["Орден"]]
-[connection signal="pressed" from="DailyButton" to="." method="_on_stub_pressed" binds=["Ежедневные дела"]]
 [connection signal="pressed" from="HomeButton" to="." method="_on_stub_pressed" binds=["Дом"]]
-[connection signal="pressed" from="BottomStoryButton" to="." method="_on_stub_pressed" binds=["История"]]
+[connection signal="pressed" from="BottomStoryButton" to="." method="_on_story_pressed"]
 [connection signal="pressed" from="BottomGuildButton" to="." method="_on_stub_pressed" binds=["Орден"]]
 [connection signal="pressed" from="BottomHomeButton" to="." method="_on_stub_pressed" binds=["Дом"]]
-[connection signal="pressed" from="SocialButton" to="." method="_on_stub_pressed" binds=["Общение"]]
+[connection signal="pressed" from="SocialButton" to="." method="_on_mail_pressed"]

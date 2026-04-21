@@ -1,0 +1,31 @@
+{
+  "offers": [
+    {
+      "id": "shop_gold_pack_s",
+      "title": "Малый запас золота",
+      "currency": "gold",
+      "price_soft": 0,
+      "price_jade": 10,
+      "amount": 10000,
+      "tag": "daily"
+    },
+    {
+      "id": "shop_qi_pack_s",
+      "title": "Связанные духовные камни",
+      "currency": "bound_spirit_stone",
+      "price_soft": 0,
+      "price_jade": 12,
+      "amount": 300,
+      "tag": "growth"
+    },
+    {
+      "id": "shop_breakthrough_bundle",
+      "title": "Набор прорыва",
+      "currency": "breakthrough_stone",
+      "price_soft": 0,
+      "price_jade": 25,
+      "amount": 2,
+      "tag": "special"
+    }
+  ]
+}

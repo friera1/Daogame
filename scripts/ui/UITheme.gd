@@ -38,6 +38,7 @@ static func _style_button(button: Button) -> void:
 	button.add_theme_color_override("font_pressed_color", COLOR_BG)
 	button.add_theme_color_override("font_disabled_color", COLOR_MUTED)
 	button.add_theme_font_size_override("font_size", 20)
+	button.add_theme_constant_override("h_separation", 8)
 
 static func _style_panel(panel: PanelContainer) -> void:
 	panel.modulate = Color(1, 1, 1, 0.96)
@@ -49,3 +50,49 @@ static func _style_label(label: Label) -> void:
 static func _style_rich_label(label: RichTextLabel) -> void:
 	label.add_theme_color_override("default_color", COLOR_TEXT)
 	label.add_theme_font_size_override("normal_font_size", 20)
+
+static func make_card_style(border_color: Color = COLOR_JADE_DARK, bg_alpha: float = 0.92) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(COLOR_CARD, bg_alpha)
+	style.border_color = border_color
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.corner_radius_top_left = 16
+	style.corner_radius_top_right = 16
+	style.corner_radius_bottom_left = 16
+	style.corner_radius_bottom_right = 16
+	style.content_margin_left = 12
+	style.content_margin_top = 10
+	style.content_margin_right = 12
+	style.content_margin_bottom = 10
+	return style
+
+static func make_button_style(fill_color: Color, border_color: Color, font_color: Color = COLOR_TEXT) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = fill_color
+	style.border_color = border_color
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.corner_radius_top_left = 14
+	style.corner_radius_top_right = 14
+	style.corner_radius_bottom_left = 14
+	style.corner_radius_bottom_right = 14
+	return style
+
+static func apply_card(panel: PanelContainer, border_color: Color = COLOR_JADE_DARK) -> void:
+	panel.add_theme_stylebox_override("panel", make_card_style(border_color))
+
+static func apply_accent_button(button: Button, is_gold: bool = false) -> void:
+	var fill := COLOR_GOLD if is_gold else COLOR_JADE_DARK
+	var border := COLOR_GOLD_DARK if is_gold else COLOR_JADE_LIGHT
+	var font := COLOR_BG if is_gold else COLOR_TEXT
+	button.add_theme_stylebox_override("normal", make_button_style(fill, border, font))
+	button.add_theme_stylebox_override("hover", make_button_style(fill.lightened(0.08), border, font))
+	button.add_theme_stylebox_override("pressed", make_button_style(fill.darkened(0.08), border, font))
+	button.add_theme_color_override("font_color", font)
+	button.add_theme_color_override("font_hover_color", font)
+	button.add_theme_color_override("font_pressed_color", font)

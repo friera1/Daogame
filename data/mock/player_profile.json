@@ -18,7 +18,10 @@
     "substage": "mid",
     "qi_exp": 588300000,
     "qi_exp_required": 600000000,
-    "breakthrough_ready": false
+    "breakthrough_ready": false,
+    "body_refinement_level": 4,
+    "spirit_refinement_level": 3,
+    "dao_heart_level": 2
   },
   "inventory": [
     {
@@ -61,6 +64,22 @@
       "level": 2,
       "awakened": true,
       "equipped_slot": 3
+    }
+  ],
+  "pets": [
+    {
+      "pet_id": "jade_crane",
+      "level": 18,
+      "stars": 3,
+      "bond_level": 2,
+      "equipped": true
+    },
+    {
+      "pet_id": "ember_fox",
+      "level": 12,
+      "stars": 2,
+      "bond_level": 1,
+      "equipped": false
     }
   ]
 }

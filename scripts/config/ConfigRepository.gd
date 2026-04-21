@@ -5,6 +5,8 @@ var items: Dictionary = {}
 var skills: Dictionary = {}
 var idle: Dictionary = {}
 var pets: Dictionary = {}
+var story: Dictionary = {}
+var daily_missions: Dictionary = {}
 
 func load_all() -> void:
 	stages = _load_json("res://data/configs/stages.json")
@@ -12,6 +14,8 @@ func load_all() -> void:
 	skills = _load_json("res://data/configs/skill_defs.json")
 	idle = _load_json("res://data/configs/idle_reward_tables.json")
 	pets = _load_json("res://data/configs/pet_defs.json")
+	story = _load_json("res://data/configs/story_chapters.json")
+	daily_missions = _load_json("res://data/configs/daily_missions.json")
 
 func _load_json(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):

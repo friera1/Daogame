@@ -4,6 +4,7 @@ signal player_loaded
 signal cultivation_changed
 signal currencies_changed
 signal skills_changed
+signal pets_changed
 
 var profile: Dictionary = {}
 
@@ -42,6 +43,27 @@ func get_currencies() -> Dictionary:
 
 func get_cultivation() -> Dictionary:
 	return profile.get("cultivation_progress", {})
+
+func refine_body() -> void:
+	var cult := get_cultivation()
+	cult["body_refinement_level"] = int(cult.get("body_refinement_level", 0)) + 1
+	profile["cultivation_progress"] = cult
+	save_profile()
+	emit_signal("cultivation_changed")
+
+func refine_spirit() -> void:
+	var cult := get_cultivation()
+	cult["spirit_refinement_level"] = int(cult.get("spirit_refinement_level", 0)) + 1
+	profile["cultivation_progress"] = cult
+	save_profile()
+	emit_signal("cultivation_changed")
+
+func refine_dao_heart() -> void:
+	var cult := get_cultivation()
+	cult["dao_heart_level"] = int(cult.get("dao_heart_level", 0)) + 1
+	profile["cultivation_progress"] = cult
+	save_profile()
+	emit_signal("cultivation_changed")
 
 func add_qi(amount: int) -> void:
 	var cult := get_cultivation()
@@ -93,3 +115,14 @@ func upgrade_skill(skill_id: String) -> bool:
 			emit_signal("skills_changed")
 			return true
 	return false
+
+func get_pets() -> Array:
+	return profile.get("pets", [])
+
+func equip_pet(pet_id: String) -> void:
+	var pets := get_pets()
+	for i in range(pets.size()):
+		pets[i]["equipped"] = str(pets[i].get("pet_id", "")) == pet_id
+	profile["pets"] = pets
+	save_profile()
+	emit_signal("pets_changed")

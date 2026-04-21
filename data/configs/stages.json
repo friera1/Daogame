@@ -1,0 +1,44 @@
+{
+  "stages": [
+    {
+      "id": "mortal_early",
+      "name": "Смертный · Ранний",
+      "qi_required": 100
+    },
+    {
+      "id": "mortal_mid",
+      "name": "Смертный · Средний",
+      "qi_required": 180
+    },
+    {
+      "id": "mortal_late",
+      "name": "Смертный · Поздний",
+      "qi_required": 280
+    },
+    {
+      "id": "body_refining_early",
+      "name": "Очищение тела · Ранний",
+      "qi_required": 420
+    },
+    {
+      "id": "qi_condensation_early",
+      "name": "Сгущение Ци · Ранний",
+      "qi_required": 650
+    },
+    {
+      "id": "foundation_mid",
+      "name": "Заложение Основания · Средний",
+      "qi_required": 1000
+    },
+    {
+      "id": "golden_core_early",
+      "name": "Золотое Ядро · Ранний",
+      "qi_required": 1600
+    },
+    {
+      "id": "nascent_soul_mid",
+      "name": "Зарождающаяся Душа · Средний",
+      "qi_required": 2600
+    }
+  ]
+}

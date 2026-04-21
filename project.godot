@@ -26,6 +26,8 @@ GameSession="*res://scripts/app/GameSession.gd"
 PlayerState="*res://scripts/app/PlayerState.gd"
 ConfigRepository="*res://scripts/config/ConfigRepository.gd"
 UITheme="*res://scripts/ui/UITheme.gd"
+SaveService="*res://scripts/infrastructure/SaveService.gd"
+IdleRewardService="*res://scripts/infrastructure/IdleRewardService.gd"
 
 [input]
 

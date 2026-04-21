@@ -1,0 +1,18 @@
+{
+  "banners": [
+    {
+      "id": "jade_banner_standard",
+      "title": "Нефритовый призыв",
+      "currency": "jade",
+      "cost_per_pull": 10,
+      "pool": [
+        {"type": "pet", "id": "jade_crane", "weight": 5},
+        {"type": "pet", "id": "ember_fox", "weight": 10},
+        {"type": "item", "id": "qi_pill_small", "weight": 35},
+        {"type": "item", "id": "breakthrough_stone", "weight": 12},
+        {"type": "item", "id": "spirit_stone", "weight": 38}
+      ],
+      "pity": 30
+    }
+  ]
+}

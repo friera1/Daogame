@@ -1,5 +1,7 @@
 extends Control
 
+const IconLoader = preload("res://scripts/ui/IconLoader.gd")
+
 @onready var list_container: VBoxContainer = %SkillList
 @onready var detail_label: RichTextLabel = %DetailLabel
 
@@ -15,15 +17,21 @@ func _refresh() -> void:
 		var skill_id := str(entry.get("skill_id", ""))
 		var row := HBoxContainer.new()
 		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var icon := TextureRect.new()
+		icon.custom_minimum_size = Vector2(48, 48)
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.texture = IconLoader.get_skill_icon(skill_id)
 		var name_label := Label.new()
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		name_label.text = "%s · ур. %d" % [_get_skill_name(skill_id), int(entry.get("level", 1))]
 		var upgrade_button := Button.new()
 		upgrade_button.text = "Усилить"
+		upgrade_button.icon = IconLoader.get_skill_icon(skill_id)
 		upgrade_button.pressed.connect(_on_upgrade_pressed.bind(skill_id))
 		var show_button := Button.new()
 		show_button.text = "Детали"
 		show_button.pressed.connect(_show_skill.bind(skill_id))
+		row.add_child(icon)
 		row.add_child(name_label)
 		row.add_child(show_button)
 		row.add_child(upgrade_button)
@@ -32,10 +40,7 @@ func _refresh() -> void:
 		_show_skill(str(skills[0].get("skill_id", "")))
 
 func _get_skill_name(skill_id: String) -> String:
-	for skill in ConfigRepository.skills.get("skills", []):
-		if str(skill.get("id", "")) == skill_id:
-			return str(skill.get("name", skill_id))
-	return skill_id
+	return ConfigRepository.get_skill_name(skill_id)
 
 func _show_skill(skill_id: String) -> void:
 	for skill in ConfigRepository.skills.get("skills", []):

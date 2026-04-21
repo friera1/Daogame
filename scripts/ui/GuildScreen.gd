@@ -26,20 +26,27 @@ func _refresh() -> void:
 	for child in member_list.get_children():
 		child.queue_free()
 	var guild := guild_data.get("guild", {})
+	var boss_progress := int(guild.get("boss_progress", 0))
+	var member_count := int(guild.get("members", 0))
+	var max_members := int(guild.get("max_members", 1))
 	title_label.text = str(guild.get("name", "Орден"))
 	title_label.add_theme_color_override("font_color", UITheme.COLOR_GOLD)
 	title_label.add_theme_font_size_override("font_size", 28)
-	summary_label.text = "[b]Глава[/b]: %s\n[b]Уровень[/b]: %s\n[b]Сила ордена[/b]: %s\n[b]Состав[/b]: %s / %s\n[b]Пожертвования сегодня[/b]: %s\n[b]Прогресс босса ордена[/b]: %s%%\n\n[i]%s[/i]" % [
+	summary_label.text = "[b]Глава[/b]: %s\n[b]Уровень[/b]: %s\n[b]Сила ордена[/b]: %s\n[b]Состав[/b]: %s / %s [%s]\n[b]Пожертвования сегодня[/b]: %s\n[b]Прогресс босса ордена[/b]: %s%% [%s]\n\n[i]%s[/i]" % [
 		str(guild.get("leader", "-")),
 		str(guild.get("level", 1)),
 		str(guild.get("power", 0)),
-		str(guild.get("members", 0)),
-		str(guild.get("max_members", 0)),
+		str(member_count),
+		str(max_members),
+		"ПОЛОН" if member_count >= max_members else "НАБОР",
 		str(guild.get("daily_donations", 0)),
-		str(guild.get("boss_progress", 0)),
+		str(boss_progress),
+		"ГОТОВ" if boss_progress >= 100 else "ПРОГРЕСС",
 		str(guild.get("announcement", ""))
 	]
 	for member in guild.get("member_list", []):
+		var power := int(member.get("power", 0))
+		var badge := "[ЭЛИТА]" if power >= 250000 else "[АКТИВ]"
 		var card := PanelContainer.new()
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		UITheme.apply_card(card, UITheme.COLOR_GOLD_DARK)
@@ -53,7 +60,7 @@ func _refresh() -> void:
 		icon.texture = IconLoader.get_icon("story_marker")
 		var label := Label.new()
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		label.text = "%s · %s · %s" % [str(member.get("name", "Ученик")), str(member.get("role", "Участник")), str(member.get("power", 0))]
+		label.text = "%s %s · %s · %s" % [badge, str(member.get("name", "Ученик")), str(member.get("role", "Участник")), str(power)]
 		var gift_button := Button.new()
 		gift_button.text = "Поддержать"
 		gift_button.icon = IconLoader.get_currency_icon("jade")

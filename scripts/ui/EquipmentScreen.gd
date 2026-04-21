@@ -18,9 +18,10 @@ func _refresh() -> void:
 	var equipment := PlayerState.get_equipment()
 	for slot_id in ["weapon", "armor", "boots", "ring"]:
 		var item_id := str(equipment.get(slot_id, "none"))
+		var equipped := item_id != "none"
 		var card := PanelContainer.new()
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		UITheme.apply_card(card, UITheme.COLOR_GOLD_DARK if item_id != "none" else UITheme.COLOR_JADE_DARK)
+		UITheme.apply_card(card, UITheme.COLOR_GOLD_DARK if equipped else UITheme.COLOR_JADE_DARK)
 		var row := HBoxContainer.new()
 		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_theme_constant_override("separation", 12)
@@ -31,14 +32,15 @@ func _refresh() -> void:
 		icon.texture = IconLoader.get_item_icon(item_id)
 		var label := Label.new()
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		label.text = "%s: %s" % [_slot_name(slot_id), _item_name(item_id)]
+		var state_badge := "[ЭКИП]" if equipped else "[ПУСТО]"
+		label.text = "%s %s: %s" % [state_badge, _slot_name(slot_id), _item_name(item_id)]
 		var choose_button := Button.new()
-		choose_button.text = "Выбрать"
+		choose_button.text = "Кандидаты"
 		choose_button.icon = IconLoader.get_skill_icon("jade_guard")
 		UITheme.apply_accent_button(choose_button, false)
 		choose_button.pressed.connect(_show_candidates.bind(slot_id))
 		var equip_button := Button.new()
-		equip_button.text = "Надеть"
+		equip_button.text = "Сменить" if equipped else "Надеть"
 		equip_button.icon = IconLoader.get_skill_icon("azure_slash")
 		UITheme.apply_accent_button(equip_button, true)
 		equip_button.pressed.connect(_equip_first_candidate.bind(slot_id))
@@ -82,7 +84,7 @@ func _show_candidates(slot_id: String) -> void:
 	var lines: Array[String] = []
 	for item_id in candidates:
 		lines.append(_item_name(item_id))
-	detail_label.text = "[b]%s[/b]\n\nДоступные предметы:\n• %s" % [_slot_name(slot_id), "\n• ".join(lines)]
+	detail_label.text = "[b]%s[/b]\n\nДоступные предметы (%d):\n• %s" % [_slot_name(slot_id), candidates.size(), "\n• ".join(lines)]
 
 func _equip_first_candidate(slot_id: String) -> void:
 	var candidates := _inventory_candidates(slot_id)
@@ -99,7 +101,7 @@ func _show_summary() -> void:
 		"Броня: %s\n" % _item_name(str(equipment.get("armor", "-"))) + \
 		"Сапоги: %s\n" % _item_name(str(equipment.get("boots", "-"))) + \
 		"Кольцо: %s\n\n" % _item_name(str(equipment.get("ring", "-"))) + \
-		"Нажми «Выбрать», чтобы посмотреть кандидатов из инвентаря."
+		"Нажми «Кандидаты», чтобы посмотреть доступные предметы из инвентаря."
 
 func _on_back_pressed() -> void:
 	SceneRouter.goto_scene("res://scenes/character/CharacterScreen.tscn")

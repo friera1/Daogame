@@ -3,6 +3,8 @@ extends Control
 @onready var equipment_list: VBoxContainer = %EquipmentList
 @onready var detail_label: RichTextLabel = %DetailLabel
 
+var selected_slot_id := "weapon"
+
 func _ready() -> void:
 	_refresh()
 	PlayerState.equipment_changed.connect(_refresh)
@@ -18,11 +20,15 @@ func _refresh() -> void:
 		var label := Label.new()
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		label.text = "%s: %s" % [_slot_name(slot_id), _item_name(item_id)]
-		var button := Button.new()
-		button.text = "Сменить"
-		button.pressed.connect(_cycle_slot.bind(slot_id))
+		var choose_button := Button.new()
+		choose_button.text = "Выбрать"
+		choose_button.pressed.connect(_show_candidates.bind(slot_id))
+		var equip_button := Button.new()
+		equip_button.text = "Надеть"
+		equip_button.pressed.connect(_equip_first_candidate.bind(slot_id))
 		row.add_child(label)
-		row.add_child(button)
+		row.add_child(choose_button)
+		row.add_child(equip_button)
 		equipment_list.add_child(row)
 	_show_summary()
 
@@ -40,14 +46,33 @@ func _item_name(item_id: String) -> String:
 			return str(item.get("name", item_id))
 	return item_id
 
-func _cycle_slot(slot_id: String) -> void:
-	var candidates: Array = []
-	for item in ConfigRepository.items.get("items", []):
-		if str(item.get("type", "")) == slot_id:
-			candidates.append(str(item.get("id", "")))
+func _inventory_candidates(slot_id: String) -> Array:
+	var result: Array = []
+	var inventory := PlayerState.get_inventory()
+	for entry in inventory:
+		var entry_item_id := str(entry.get("item_id", ""))
+		for item in ConfigRepository.items.get("items", []):
+			if str(item.get("id", "")) == entry_item_id and str(item.get("type", "")) == slot_id:
+				result.append(entry_item_id)
+	return result
+
+func _show_candidates(slot_id: String) -> void:
+	selected_slot_id = slot_id
+	var candidates := _inventory_candidates(slot_id)
 	if candidates.is_empty():
+		detail_label.text = "[b]%s[/b]\n\nПодходящих предметов в инвентаре нет." % _slot_name(slot_id)
 		return
-	PlayerState.equip_item(slot_id, candidates[0])
+	var lines: Array[String] = []
+	for item_id in candidates:
+		lines.append(_item_name(item_id))
+	detail_label.text = "[b]%s[/b]\n\nДоступные предметы:\n• %s" % [_slot_name(slot_id), "\n• ".join(lines)]
+
+func _equip_first_candidate(slot_id: String) -> void:
+	var candidates := _inventory_candidates(slot_id)
+	if candidates.is_empty():
+		_show_candidates(slot_id)
+		return
+	PlayerState.equip_item(slot_id, str(candidates[0]))
 	_show_summary()
 
 func _show_summary() -> void:
@@ -56,7 +81,8 @@ func _show_summary() -> void:
 		"Оружие: %s\n" % _item_name(str(equipment.get("weapon", "-"))) + \
 		"Броня: %s\n" % _item_name(str(equipment.get("armor", "-"))) + \
 		"Сапоги: %s\n" % _item_name(str(equipment.get("boots", "-"))) + \
-		"Кольцо: %s" % _item_name(str(equipment.get("ring", "-")))
+		"Кольцо: %s\n\n" % _item_name(str(equipment.get("ring", "-"))) + \
+		"Нажми «Выбрать», чтобы посмотреть кандидатов из инвентаря."
 
 func _on_back_pressed() -> void:
 	SceneRouter.goto_scene("res://scenes/character/CharacterScreen.tscn")

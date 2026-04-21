@@ -25,10 +25,12 @@ func _refresh() -> void:
 	if enemy_hp_value <= 0 and not battle_over:
 		battle_over = true
 		_append_log("Победа")
+		_finalize_battle(true)
 		_disable_skills()
 	if player_hp_value <= 0 and not battle_over:
 		battle_over = true
 		_append_log("Поражение")
+		_finalize_battle(false)
 		_disable_skills()
 
 func _append_log(text: String) -> void:
@@ -38,6 +40,18 @@ func _disable_skills() -> void:
 	skill_1.disabled = true
 	skill_2.disabled = true
 	ultimate_button.disabled = true
+
+func _finalize_battle(victory: bool) -> void:
+	GameSession.last_battle_result = {
+		"victory": victory,
+		"rewards": {
+			"gold": 320 if victory else 80,
+			"qi_essence": 18 if victory else 6,
+			"spirit_stone": 1 if victory else 0,
+		}
+	}
+	await get_tree().create_timer(1.0).timeout
+	SceneRouter.goto_scene("res://scenes/battle/BattleResultScreen.tscn")
 
 func _enemy_turn() -> void:
 	if battle_over:

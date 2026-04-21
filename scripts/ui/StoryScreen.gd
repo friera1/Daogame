@@ -5,6 +5,7 @@ extends Control
 @onready var info_label: RichTextLabel = %InfoLabel
 
 func _ready() -> void:
+	UITheme.apply_lobby_style(self)
 	_refresh_chapters()
 
 func _refresh_chapters() -> void:
@@ -27,14 +28,18 @@ func _show_chapter(chapter_id: String) -> void:
 	for chapter in ConfigRepository.story.get("chapters", []):
 		if str(chapter.get("id", "")) != chapter_id:
 			continue
-			
 		info_label.text = "[b]%s[/b]\n\nВыбери узел главы." % str(chapter.get("name", chapter_id))
 		for node in chapter.get("nodes", []):
+			var node_id := str(node.get("id", ""))
+			var node_type := str(node.get("type", "node"))
 			var row := HBoxContainer.new()
 			row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			var label := Label.new()
 			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			label.text = "%s · %s" % [str(node.get("type", "node")), str(node.get("title", "Узел"))]
+			var suffix := ""
+			if node_type == "reward" and GameSession.has_claimed_story_reward(node_id):
+				suffix = " · получено"
+			label.text = "%s · %s%s" % [node_type, str(node.get("title", "Узел")), suffix]
 			var action := Button.new()
 			action.text = "Открыть"
 			action.pressed.connect(_open_node.bind(node))
@@ -48,7 +53,28 @@ func _open_node(node: Dictionary) -> void:
 	if node_type == "battle":
 		SceneRouter.goto_scene("res://scenes/battle/BattleScreen.tscn")
 		return
+	if node_type == "reward":
+		_claim_reward_node(node)
+		return
 	info_label.text = "[b]%s[/b]\n\n%s" % [str(node.get("title", "Узел")), _node_description(node_type)]
+
+func _claim_reward_node(node: Dictionary) -> void:
+	var node_id := str(node.get("id", ""))
+	if GameSession.has_claimed_story_reward(node_id):
+		info_label.text = "[b]%s[/b]\n\nНаграда уже получена." % str(node.get("title", "Награда"))
+		return
+	var rewards := node.get("rewards", {})
+	for currency_id in rewards.keys():
+		PlayerState.add_currency(str(currency_id), int(rewards[currency_id]))
+	GameSession.mark_story_reward_claimed(node_id)
+	info_label.text = "[b]%s[/b]\n\nПолучено:\n%s" % [str(node.get("title", "Награда")), _format_rewards(rewards)]
+	_refresh_chapters()
+
+func _format_rewards(rewards: Dictionary) -> String:
+	var lines: Array[String] = []
+	for currency_id in rewards.keys():
+		lines.append("• %s: %s" % [str(currency_id), str(rewards[currency_id])])
+	return "\n".join(lines)
 
 func _node_description(node_type: String) -> String:
 	match node_type:

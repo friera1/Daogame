@@ -1,10 +1,24 @@
 extends Control
 
+const SHOP_BG_PATH := "res://assets/art/generated/lobby_background_primary.png"
+const SHOP_BANNER_PATH := "res://assets/art/generated/shop_banner_primary.png"
+
 @onready var offer_list: VBoxContainer = %OfferList
 @onready var detail_label: RichTextLabel = %DetailLabel
+@onready var shop_background_art: TextureRect = %ShopBackgroundArt
+@onready var banner_art: TextureRect = %BannerArt
 
 func _ready() -> void:
+	_apply_art()
 	_refresh()
+
+func _apply_art() -> void:
+	var bg := ArtLoader.load_texture_safe(SHOP_BG_PATH)
+	if bg != null:
+		shop_background_art.texture = bg
+	var banner := ArtLoader.load_texture_safe(SHOP_BANNER_PATH)
+	if banner != null:
+		banner_art.texture = banner
 
 func _refresh() -> void:
 	for child in offer_list.get_children():

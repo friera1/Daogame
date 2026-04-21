@@ -193,7 +193,7 @@ layout_mode = 1
 offset_left = 586.0
 offset_top = 250.0
 offset_right = 698.0
-offset_bottom = 780.0
+offset_bottom = 860.0
 
 [node name="InventoryButton" type="Button" parent="RightMenu"]
 layout_mode = 2
@@ -206,6 +206,14 @@ text = "Навыки"
 [node name="PetButton" type="Button" parent="RightMenu"]
 layout_mode = 2
 text = "Питомец"
+
+[node name="ShopButton" type="Button" parent="RightMenu"]
+layout_mode = 2
+text = "Магазин"
+
+[node name="SummonButton" type="Button" parent="RightMenu"]
+layout_mode = 2
+text = "Призыв"
 
 [node name="HomeButton" type="Button" parent="RightMenu"]
 layout_mode = 2
@@ -255,6 +263,8 @@ text = "Общение"
 [connection signal="pressed" from="InventoryButton" to="." method="_on_inventory_pressed"]
 [connection signal="pressed" from="SkillsButton" to="." method="_on_skills_pressed"]
 [connection signal="pressed" from="PetButton" to="." method="_on_pets_pressed"]
+[connection signal="pressed" from="ShopButton" to="." method="_on_shop_pressed"]
+[connection signal="pressed" from="SummonButton" to="." method="_on_summon_pressed"]
 [connection signal="pressed" from="BattleButton" to="." method="_on_battle_pressed"]
 [connection signal="pressed" from="StoryButton" to="." method="_on_story_pressed"]
 [connection signal="pressed" from="DailyButton" to="." method="_on_daily_pressed"]

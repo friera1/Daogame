@@ -79,6 +79,12 @@ func _on_daily_pressed() -> void:
 func _on_mail_pressed() -> void:
 	SceneRouter.goto_scene("res://scenes/social/MailScreen.tscn")
 
+func _on_shop_pressed() -> void:
+	SceneRouter.goto_scene("res://scenes/shop/ShopScreen.tscn")
+
+func _on_summon_pressed() -> void:
+	SceneRouter.goto_scene("res://scenes/shop/SummonScreen.tscn")
+
 func _on_battle_pressed() -> void:
 	SceneRouter.goto_scene("res://scenes/battle/BattleScreen.tscn")
 

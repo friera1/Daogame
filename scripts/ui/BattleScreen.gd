@@ -1,5 +1,7 @@
 extends Control
 
+const BATTLE_BG_PATH := "res://assets/art/generated/battle_background_primary.png"
+
 @onready var player_name: Label = %PlayerName
 @onready var player_hp: Label = %PlayerHP
 @onready var enemy_name: Label = %EnemyName
@@ -8,16 +10,25 @@ extends Control
 @onready var skill_1: Button = %Skill1Button
 @onready var skill_2: Button = %Skill2Button
 @onready var ultimate_button: Button = %UltimateButton
+@onready var battle_background_art: TextureRect = %BattleBackgroundArt
+@onready var arena_backdrop_art: TextureRect = %ArenaBackdropArt
 
 var player_hp_value := 1200
 var enemy_hp_value := 1800
 var battle_over := false
 
 func _ready() -> void:
+	_apply_art()
 	player_name.text = PlayerState.get_name()
 	enemy_name.text = "Страж духовных руин"
 	_append_log("Бой начался")
 	_refresh()
+
+func _apply_art() -> void:
+	var art := ArtLoader.load_texture_safe(BATTLE_BG_PATH)
+	if art != null:
+		battle_background_art.texture = art
+		arena_backdrop_art.texture = art
 
 func _refresh() -> void:
 	player_hp.text = "HP: %d" % player_hp_value

@@ -1,0 +1,66 @@
+{
+  "account_id": "acc_123",
+  "character_id": "char_001",
+  "name": "Хань Ли",
+  "server_id": "s1",
+  "level": 42,
+  "vip_level": 3,
+  "combat_power": 182340,
+  "cultivation_stage": "nascent_soul_mid",
+  "currencies": {
+    "gold": 1288330,
+    "spirit_stone": 420,
+    "bound_spirit_stone": 1520,
+    "jade": 60
+  },
+  "cultivation_progress": {
+    "current_stage_id": "nascent_soul_mid",
+    "substage": "mid",
+    "qi_exp": 588300000,
+    "qi_exp_required": 600000000,
+    "breakthrough_ready": false
+  },
+  "inventory": [
+    {
+      "item_uid": "itm_1001_abc",
+      "item_id": "jade_sword_01",
+      "quantity": 1,
+      "rarity": "legendary",
+      "locked": true
+    },
+    {
+      "item_uid": "itm_1002_def",
+      "item_id": "qi_pill_small",
+      "quantity": 12,
+      "rarity": "rare",
+      "locked": false
+    },
+    {
+      "item_uid": "itm_1003_ghi",
+      "item_id": "breakthrough_stone",
+      "quantity": 4,
+      "rarity": "epic",
+      "locked": false
+    }
+  ],
+  "skills": [
+    {
+      "skill_id": "azure_slash",
+      "level": 5,
+      "awakened": false,
+      "equipped_slot": 1
+    },
+    {
+      "skill_id": "jade_guard",
+      "level": 3,
+      "awakened": false,
+      "equipped_slot": 2
+    },
+    {
+      "skill_id": "soul_bloom",
+      "level": 2,
+      "awakened": true,
+      "equipped_slot": 3
+    }
+  ]
+}

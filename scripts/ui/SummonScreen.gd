@@ -20,6 +20,7 @@ func _ready() -> void:
 	_apply_visual_polish()
 	_apply_art()
 	_apply_icons()
+	_apply_button_styles()
 	var banners := ConfigRepository.summon_pools.get("banners", [])
 	if banners.size() > 0:
 		current_banner = banners[0]
@@ -43,6 +44,10 @@ func _apply_art() -> void:
 func _apply_icons() -> void:
 	pull_once_button.icon = IconLoader.get_currency_icon("jade")
 	pull_ten_button.icon = IconLoader.get_skill_icon("azure_slash")
+
+func _apply_button_styles() -> void:
+	UITheme.apply_accent_button(pull_once_button, true)
+	UITheme.apply_accent_button(pull_ten_button, false)
 
 func _refresh_info(message: String) -> void:
 	info_label.text = "[b]%s[/b]\n\nВалюта: %s\nЦена: %s\nPity: %d / %d" % [

@@ -1,0 +1,11 @@
+{
+  "offline_cap_hours": {
+    "base": 8,
+    "monthly_card": 12,
+    "vip_max": 24
+  },
+  "base_per_minute": {
+    "gold": 120,
+    "qi_essence": 4
+  }
+}

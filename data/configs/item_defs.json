@@ -1,0 +1,27 @@
+{
+  "items": [
+    {
+      "id": "jade_sword_01",
+      "name": "Лазурный меч",
+      "type": "weapon",
+      "rarity": "legendary",
+      "atk": 120
+    },
+    {
+      "id": "spirit_stone",
+      "name": "Духовный камень",
+      "type": "currency"
+    },
+    {
+      "id": "qi_pill_small",
+      "name": "Малая пилюля Ци",
+      "type": "consumable",
+      "qi_gain": 50
+    },
+    {
+      "id": "breakthrough_stone",
+      "name": "Камень прорыва",
+      "type": "material"
+    }
+  ]
+}

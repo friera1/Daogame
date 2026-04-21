@@ -6,6 +6,7 @@ const IconLoader = preload("res://scripts/ui/IconLoader.gd")
 @onready var detail_label: RichTextLabel = %DetailLabel
 
 func _ready() -> void:
+	UITheme.apply_lobby_style(self)
 	_refresh()
 	PlayerState.skills_changed.connect(_refresh)
 
@@ -15,8 +16,13 @@ func _refresh() -> void:
 	var skills := PlayerState.get_skills()
 	for entry in skills:
 		var skill_id := str(entry.get("skill_id", ""))
+		var card := PanelContainer.new()
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		UITheme.apply_card(card, UITheme.COLOR_JADE_DARK)
 		var row := HBoxContainer.new()
 		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_theme_constant_override("separation", 12)
+		card.add_child(row)
 		var icon := TextureRect.new()
 		icon.custom_minimum_size = Vector2(48, 48)
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -27,15 +33,18 @@ func _refresh() -> void:
 		var upgrade_button := Button.new()
 		upgrade_button.text = "Усилить"
 		upgrade_button.icon = IconLoader.get_skill_icon(skill_id)
+		UITheme.apply_accent_button(upgrade_button, true)
 		upgrade_button.pressed.connect(_on_upgrade_pressed.bind(skill_id))
 		var show_button := Button.new()
 		show_button.text = "Детали"
+		show_button.icon = IconLoader.get_skill_icon("jade_guard")
+		UITheme.apply_accent_button(show_button, false)
 		show_button.pressed.connect(_show_skill.bind(skill_id))
 		row.add_child(icon)
 		row.add_child(name_label)
 		row.add_child(show_button)
 		row.add_child(upgrade_button)
-		list_container.add_child(row)
+		list_container.add_child(card)
 	if skills.size() > 0:
 		_show_skill(str(skills[0].get("skill_id", "")))
 

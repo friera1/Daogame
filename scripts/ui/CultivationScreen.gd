@@ -1,5 +1,7 @@
 extends Control
 
+const CULTIVATION_BG_PATH := "res://assets/art/generated/cultivation_background_primary.png"
+
 @onready var stage_label: Label = %StageLabel
 @onready var qi_label: Label = %QiLabel
 @onready var status_label: Label = %StatusLabel
@@ -8,10 +10,19 @@ extends Control
 @onready var dao_label: Label = %DaoLabel
 @onready var cultivate_button: Button = %CultivateButton
 @onready var breakthrough_button: Button = %BreakthroughButton
+@onready var cultivation_background_art: TextureRect = %CultivationBackgroundArt
+@onready var meditation_art: TextureRect = %MeditationArt
 
 func _ready() -> void:
+	_apply_art()
 	_refresh()
 	PlayerState.cultivation_changed.connect(_refresh)
+
+func _apply_art() -> void:
+	var art := ArtLoader.load_texture_safe(CULTIVATION_BG_PATH)
+	if art != null:
+		cultivation_background_art.texture = art
+		meditation_art.texture = art
 
 func _refresh() -> void:
 	var cult := PlayerState.get_cultivation()

@@ -50,6 +50,10 @@ layout_mode = 2
 size_flags_horizontal = 3
 text = "Персонаж"
 
+[node name="EquipmentButton" type="Button" parent="Panel/VBox/Header"]
+layout_mode = 2
+text = "Снаряжение"
+
 [node name="PortraitPanel" type="PanelContainer" parent="Panel/VBox"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 320)
@@ -92,3 +96,4 @@ bbcode_enabled = true
 text = ""
 
 [connection signal="pressed" from="Panel/VBox/Header/BackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="Panel/VBox/Header/EquipmentButton" to="." method="_on_equipment_pressed"]

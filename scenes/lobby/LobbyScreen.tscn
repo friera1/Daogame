@@ -18,6 +18,15 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 color = Color(0.0431373, 0.0705882, 0.0588235, 1)
 
+[node name="LobbyBackgroundArt" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+stretch_mode = 6
+expand_mode = 1
+self_modulate = Color(1, 1, 1, 0.85)
+
 [node name="SkyGlow" type="ColorRect" parent="."]
 layout_mode = 1
 offset_left = 0.0
@@ -114,6 +123,21 @@ offset_top = 190.0
 offset_right = 570.0
 offset_bottom = 1030.0
 
+[node name="HeroArt" type="TextureRect" parent="HeroPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+stretch_mode = 5
+expand_mode = 1
+
+[node name="HeroOverlayShade" type="ColorRect" parent="HeroPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.05, 0.08, 0.07, 0.35)
+
 [node name="HeroVBox" type="VBoxContainer" parent="HeroPanel"]
 layout_mode = 2
 alignment = 1
@@ -130,12 +154,12 @@ text = "Хань Ли"
 [node name="HeroSilhouette" type="ColorRect" parent="HeroPanel/HeroVBox"]
 layout_mode = 2
 custom_minimum_size = Vector2(260, 500)
-color = Color(0.184314, 0.435294, 0.364706, 1)
+color = Color(0.184314, 0.435294, 0.364706, 0.5)
 
 [node name="HeroHint" type="Label" parent="HeroPanel/HeroVBox"]
 layout_mode = 2
 horizontal_alignment = 1
-text = "Hero showcase placeholder"
+text = "Hero art slot ready"
 
 [node name="LeftMenu" type="VBoxContainer" parent="."]
 layout_mode = 1

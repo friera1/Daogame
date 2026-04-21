@@ -20,6 +20,8 @@ func load_mock_profile() -> void:
 	profile = JSON.parse_string(file.get_as_text())
 	if not profile.has("tutorial"):
 		profile["tutorial"] = {"completed": false, "step_index": 0}
+	if not profile.has("pet_shards"):
+		profile["pet_shards"] = {}
 	save_profile()
 	emit_signal("player_loaded")
 
@@ -31,6 +33,8 @@ func load_or_create_profile() -> void:
 	profile = saved
 	if not profile.has("tutorial"):
 		profile["tutorial"] = {"completed": false, "step_index": 0}
+	if not profile.has("pet_shards"):
+		profile["pet_shards"] = {}
 	emit_signal("player_loaded")
 
 func save_profile() -> void:
@@ -56,6 +60,12 @@ func get_equipment() -> Dictionary:
 
 func get_tutorial() -> Dictionary:
 	return profile.get("tutorial", {"completed": false, "step_index": 0})
+
+func get_pet_shards() -> Dictionary:
+	return profile.get("pet_shards", {})
+
+func get_pet_shards_for(pet_id: String) -> int:
+	return int(get_pet_shards().get(pet_id, 0))
 
 func set_tutorial_step(step_index: int) -> void:
 	var tutorial := get_tutorial()
@@ -195,6 +205,33 @@ func add_pet(pet_id: String) -> bool:
 	emit_signal("pets_changed")
 	return true
 
+func add_pet_shards(pet_id: String, amount: int) -> int:
+	var shards := get_pet_shards()
+	shards[pet_id] = int(shards.get(pet_id, 0)) + amount
+	profile["pet_shards"] = shards
+	save_profile()
+	emit_signal("pets_changed")
+	return int(shards[pet_id])
+
+func evolve_pet_with_shards(pet_id: String) -> bool:
+	var shards_needed := 3
+	var shards := get_pet_shards()
+	var current_shards := int(shards.get(pet_id, 0))
+	if current_shards < shards_needed:
+		return false
+	var pets := get_pets()
+	for i in range(pets.size()):
+		if str(pets[i].get("pet_id", "")) != pet_id:
+			continue
+		pets[i]["stars"] = int(pets[i].get("stars", 1)) + 1
+		shards[pet_id] = current_shards - shards_needed
+		profile["pets"] = pets
+		profile["pet_shards"] = shards
+		save_profile()
+		emit_signal("pets_changed")
+		return true
+	return false
+
 func equip_pet(pet_id: String) -> void:
 	var pets := get_pets()
 	for i in range(pets.size()):
@@ -233,10 +270,10 @@ func grant_summon_reward(reward: Dictionary) -> Dictionary:
 			result["status"] = "new_pet"
 			result["text"] = "%s добавлен в питомцы" % reward_id
 			return result
-		add_inventory_item("breakthrough_stone", 1, "epic")
+		var shard_total := add_pet_shards(reward_id, 1)
 		result["duplicate"] = true
 		result["status"] = "duplicate_pet"
-		result["text"] = "%s уже был у тебя, выдан камень прорыва" % reward_id
+		result["text"] = "%s уже был у тебя, получен осколок (%d/3)" % [reward_id, shard_total]
 		return result
 	if reward_id == "breakthrough_stone":
 		rarity = "epic"

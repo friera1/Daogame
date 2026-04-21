@@ -46,6 +46,7 @@ layout_mode = 2
 text = "Назад"
 
 [node name="HeaderTitle" type="Label" parent="Panel/VBox/Header"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Призыв"
@@ -55,6 +56,7 @@ layout_mode = 2
 custom_minimum_size = Vector2(0, 260)
 
 [node name="BannerArt" type="TextureRect" parent="Panel/VBox/BannerPanel"]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -77,15 +79,30 @@ text = "Баннер"
 [node name="InfoLabel" type="RichTextLabel" parent="Panel/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
-custom_minimum_size = Vector2(0, 260)
+custom_minimum_size = Vector2(0, 170)
 bbcode_enabled = true
 text = ""
 
+[node name="ResultTitle" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+text = "Последние награды"
+
+[node name="ResultPanel" type="PanelContainer" parent="Panel/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 210)
+
+[node name="ResultList" type="VBoxContainer" parent="Panel/VBox/ResultPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+
 [node name="PullOnceButton" type="Button" parent="Panel/VBox"]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Призвать 1"
 
 [node name="PullTenButton" type="Button" parent="Panel/VBox"]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Призвать 10"
 

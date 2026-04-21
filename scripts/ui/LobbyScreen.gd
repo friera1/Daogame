@@ -2,6 +2,7 @@ extends Control
 
 const LOBBY_BG_PATH := "res://assets/art/generated/lobby_background_primary.png"
 const HERO_ART_PATH := "res://assets/art/generated/hero_fullbody_primary.png"
+const TUTORIAL_OVERLAY_SCENE := preload("res://scenes/tutorial/TutorialOverlay.tscn")
 
 @onready var name_label: Label = %NameLabel
 @onready var level_label: Label = %LevelLabel
@@ -30,6 +31,14 @@ func _ready() -> void:
 	PlayerState.skills_changed.connect(_refresh)
 	PlayerState.pets_changed.connect(_refresh)
 	_show_idle_status()
+	_maybe_show_tutorial()
+
+func _maybe_show_tutorial() -> void:
+	var tutorial := PlayerState.get_tutorial()
+	if bool(tutorial.get("completed", false)):
+		return
+	var overlay := TUTORIAL_OVERLAY_SCENE.instantiate()
+	add_child(overlay)
 
 func _apply_visual_polish() -> void:
 	cta_button.add_theme_font_size_override("font_size", 28)

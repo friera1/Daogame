@@ -7,6 +7,7 @@ signal skills_changed
 signal pets_changed
 signal equipment_changed
 signal tutorial_changed
+signal inventory_changed
 
 var profile: Dictionary = {}
 
@@ -135,6 +136,26 @@ func apply_idle_rewards() -> Dictionary:
 func get_inventory() -> Array:
 	return profile.get("inventory", [])
 
+func add_inventory_item(item_id: String, quantity: int = 1, rarity: String = "common") -> void:
+	var inventory := get_inventory()
+	for i in range(inventory.size()):
+		if str(inventory[i].get("item_id", "")) == item_id and not bool(inventory[i].get("locked", false)):
+			inventory[i]["quantity"] = int(inventory[i].get("quantity", 0)) + quantity
+			profile["inventory"] = inventory
+			save_profile()
+			emit_signal("inventory_changed")
+			return
+	inventory.append({
+		"item_uid": "itm_%s_%d" % [item_id, Time.get_unix_time_from_system()],
+		"item_id": item_id,
+		"quantity": quantity,
+		"rarity": rarity,
+		"locked": false
+	})
+	profile["inventory"] = inventory
+	save_profile()
+	emit_signal("inventory_changed")
+
 func get_skills() -> Array:
 	return profile.get("skills", [])
 
@@ -152,6 +173,28 @@ func upgrade_skill(skill_id: String) -> bool:
 func get_pets() -> Array:
 	return profile.get("pets", [])
 
+func has_pet(pet_id: String) -> bool:
+	for pet in get_pets():
+		if str(pet.get("pet_id", "")) == pet_id:
+			return true
+	return false
+
+func add_pet(pet_id: String) -> bool:
+	if has_pet(pet_id):
+		return false
+	var pets := get_pets()
+	pets.append({
+		"pet_id": pet_id,
+		"level": 1,
+		"stars": 1,
+		"bond_level": 1,
+		"equipped": false
+	})
+	profile["pets"] = pets
+	save_profile()
+	emit_signal("pets_changed")
+	return true
+
 func equip_pet(pet_id: String) -> void:
 	var pets := get_pets()
 	for i in range(pets.size()):
@@ -159,3 +202,20 @@ func equip_pet(pet_id: String) -> void:
 	profile["pets"] = pets
 	save_profile()
 	emit_signal("pets_changed")
+
+func grant_summon_reward(reward: Dictionary) -> String:
+	var reward_type := str(reward.get("type", "item"))
+	var reward_id := str(reward.get("id", ""))
+	if reward_type == "pet":
+		if add_pet(reward_id):
+			return "%s добавлен в питомцы" % reward_id
+		add_inventory_item("breakthrough_stone", 1, "epic")
+		return "%s уже был у тебя, выдан камень прорыва" % reward_id
+	var rarity := "rare"
+	if reward_id == "breakthrough_stone":
+		rarity = "epic"
+	elif reward_id == "spirit_stone":
+		add_currency("spirit_stone", 10)
+		return "spirit_stone x10"
+	add_inventory_item(reward_id, 1, rarity)
+	return "%s x1" % reward_id

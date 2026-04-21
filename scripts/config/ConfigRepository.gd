@@ -39,3 +39,23 @@ func get_stage_name(stage_id: String) -> String:
 		if stage.get("id", "") == stage_id:
 			return str(stage.get("name", stage_id))
 	return stage_id
+
+func get_item_def(item_id: String) -> Dictionary:
+	for item in items.get("items", []):
+		if str(item.get("id", "")) == item_id:
+			return item
+	return {}
+
+func get_item_name(item_id: String) -> String:
+	var item := get_item_def(item_id)
+	return str(item.get("name", item_id))
+
+func get_skill_def(skill_id: String) -> Dictionary:
+	for skill in skills.get("skills", []):
+		if str(skill.get("id", "")) == skill_id:
+			return skill
+	return {}
+
+func get_skill_name(skill_id: String) -> String:
+	var skill := get_skill_def(skill_id)
+	return str(skill.get("name", skill_id))

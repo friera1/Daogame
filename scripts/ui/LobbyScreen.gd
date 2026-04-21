@@ -116,6 +116,9 @@ func _on_shop_pressed() -> void:
 func _on_summon_pressed() -> void:
 	SceneRouter.goto_scene("res://scenes/shop/SummonScreen.tscn")
 
+func _on_guild_pressed() -> void:
+	SceneRouter.goto_scene("res://scenes/guild/GuildScreen.tscn")
+
 func _on_battle_pressed() -> void:
 	SceneRouter.goto_scene("res://scenes/battle/BattleScreen.tscn")
 

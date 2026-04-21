@@ -17,6 +17,7 @@ func _ready() -> void:
 	PlayerState.cultivation_changed.connect(_refresh)
 	PlayerState.currencies_changed.connect(_refresh)
 	PlayerState.skills_changed.connect(_refresh)
+	PlayerState.pets_changed.connect(_refresh)
 	_show_idle_status()
 
 func _refresh() -> void:
@@ -65,6 +66,9 @@ func _on_inventory_pressed() -> void:
 
 func _on_skills_pressed() -> void:
 	SceneRouter.goto_scene("res://scenes/skills/SkillsScreen.tscn")
+
+func _on_pets_pressed() -> void:
+	SceneRouter.goto_scene("res://scenes/pets/PetScreen.tscn")
 
 func _on_battle_pressed() -> void:
 	SceneRouter.goto_scene("res://scenes/battle/BattleScreen.tscn")

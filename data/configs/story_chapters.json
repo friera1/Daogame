@@ -6,7 +6,7 @@
       "nodes": [
         {"id": "c1_n1", "type": "story", "title": "Пробуждение в туманных горах"},
         {"id": "c1_n2", "type": "battle", "title": "Испытание у врат секты"},
-        {"id": "c1_n3", "type": "reward", "title": "Свиток наставника"}
+        {"id": "c1_n3", "type": "reward", "title": "Свиток наставника", "rewards": {"gold": 1500, "bound_spirit_stone": 40}}
       ]
     },
     {
@@ -15,7 +15,7 @@
       "nodes": [
         {"id": "c2_n1", "type": "story", "title": "Шёпот древних рун"},
         {"id": "c2_n2", "type": "battle", "title": "Страж руин"},
-        {"id": "c2_n3", "type": "reward", "title": "Нефритовый знак"}
+        {"id": "c2_n3", "type": "reward", "title": "Нефритовый знак", "rewards": {"gold": 2200, "bound_spirit_stone": 65}}
       ]
     },
     {
@@ -24,7 +24,7 @@
       "nodes": [
         {"id": "c3_n1", "type": "story", "title": "Небо над пиком дрожит"},
         {"id": "c3_n2", "type": "battle", "title": "Молниеносный дух"},
-        {"id": "c3_n3", "type": "reward", "title": "Печать прорыва"}
+        {"id": "c3_n3", "type": "reward", "title": "Печать прорыва", "rewards": {"gold": 3000, "bound_spirit_stone": 90, "jade": 5}}
       ]
     }
   ]

@@ -1,5 +1,7 @@
 extends Control
 
+const IconLoader = preload("res://scripts/ui/IconLoader.gd")
+
 @onready var pet_list: VBoxContainer = %PetList
 @onready var detail_label: RichTextLabel = %DetailLabel
 
@@ -15,15 +17,22 @@ func _refresh() -> void:
 		var pet_id := str(pet.get("pet_id", ""))
 		var row := HBoxContainer.new()
 		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var icon := TextureRect.new()
+		icon.custom_minimum_size = Vector2(48, 48)
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.texture = IconLoader.get_currency_icon("jade")
 		var label := Label.new()
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		label.text = "%s · ур. %d · ★%d" % [_get_pet_name(pet_id), int(pet.get("level", 1)), int(pet.get("stars", 1))]
 		var details_button := Button.new()
 		details_button.text = "Детали"
+		details_button.icon = IconLoader.get_skill_icon("jade_guard")
 		details_button.pressed.connect(_show_pet.bind(pet_id))
 		var equip_button := Button.new()
 		equip_button.text = "Активен" if bool(pet.get("equipped", false)) else "Выбрать"
+		equip_button.icon = IconLoader.get_skill_icon("azure_slash")
 		equip_button.pressed.connect(_equip_pet.bind(pet_id))
+		row.add_child(icon)
 		row.add_child(label)
 		row.add_child(details_button)
 		row.add_child(equip_button)

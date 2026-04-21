@@ -3,6 +3,7 @@ extends Node
 signal player_loaded
 signal cultivation_changed
 signal currencies_changed
+signal skills_changed
 
 var profile: Dictionary = {}
 
@@ -13,7 +14,19 @@ func load_mock_profile() -> void:
 		push_error("Failed to open mock player profile")
 		return
 	profile = JSON.parse_string(file.get_as_text())
+	save_profile()
 	emit_signal("player_loaded")
+
+func load_or_create_profile() -> void:
+	var saved := SaveService.load_profile()
+	if saved.is_empty():
+		load_mock_profile()
+		return
+	profile = saved
+	emit_signal("player_loaded")
+
+func save_profile() -> void:
+	SaveService.save_profile(profile)
 
 func get_name() -> String:
 	return str(profile.get("name", "Безымянный культиватор"))
@@ -36,6 +49,7 @@ func add_qi(amount: int) -> void:
 	var required := int(cult.get("qi_exp_required", 1))
 	cult["breakthrough_ready"] = cult["qi_exp"] >= required
 	profile["cultivation_progress"] = cult
+	save_profile()
 	emit_signal("cultivation_changed")
 
 func spend_currency(currency_id: String, amount: int) -> bool:
@@ -45,11 +59,37 @@ func spend_currency(currency_id: String, amount: int) -> bool:
 		return false
 	currencies[currency_id] = current - amount
 	profile["currencies"] = currencies
+	save_profile()
 	emit_signal("currencies_changed")
 	return true
+
+func add_currency(currency_id: String, amount: int) -> void:
+	var currencies := get_currencies()
+	currencies[currency_id] = int(currencies.get(currency_id, 0)) + amount
+	profile["currencies"] = currencies
+	save_profile()
+	emit_signal("currencies_changed")
+
+func apply_idle_rewards() -> Dictionary:
+	var rewards := IdleRewardService.calculate_rewards()
+	add_currency("gold", int(rewards.get("gold", 0)))
+	add_currency("bound_spirit_stone", int(rewards.get("qi_essence", 0)))
+	IdleRewardService.mark_exit_time()
+	return rewards
 
 func get_inventory() -> Array:
 	return profile.get("inventory", [])
 
 func get_skills() -> Array:
 	return profile.get("skills", [])
+
+func upgrade_skill(skill_id: String) -> bool:
+	var skills := get_skills()
+	for i in range(skills.size()):
+		if str(skills[i].get("skill_id", "")) == skill_id:
+			skills[i]["level"] = int(skills[i].get("level", 1)) + 1
+			profile["skills"] = skills
+			save_profile()
+			emit_signal("skills_changed")
+			return true
+	return false

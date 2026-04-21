@@ -70,6 +70,15 @@ func _on_skills_pressed() -> void:
 func _on_pets_pressed() -> void:
 	SceneRouter.goto_scene("res://scenes/pets/PetScreen.tscn")
 
+func _on_story_pressed() -> void:
+	SceneRouter.goto_scene("res://scenes/story/StoryScreen.tscn")
+
+func _on_daily_pressed() -> void:
+	SceneRouter.goto_scene("res://scenes/events/DailyMissionsScreen.tscn")
+
+func _on_mail_pressed() -> void:
+	SceneRouter.goto_scene("res://scenes/social/MailScreen.tscn")
+
 func _on_battle_pressed() -> void:
 	SceneRouter.goto_scene("res://scenes/battle/BattleScreen.tscn")
 

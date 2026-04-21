@@ -1,5 +1,7 @@
 extends Control
 
+const IconLoader = preload("res://scripts/ui/IconLoader.gd")
+
 @onready var title_label: Label = %TitleLabel
 @onready var summary_label: RichTextLabel = %SummaryLabel
 @onready var member_list: VBoxContainer = %MemberList
@@ -38,19 +40,29 @@ func _refresh() -> void:
 		str(guild.get("announcement", ""))
 	]
 	for member in guild.get("member_list", []):
+		var card := PanelContainer.new()
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		UITheme.apply_card(card, UITheme.COLOR_GOLD_DARK)
 		var row := HBoxContainer.new()
 		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_theme_constant_override("separation", 12)
+		card.add_child(row)
+		var icon := TextureRect.new()
+		icon.custom_minimum_size = Vector2(44, 44)
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.texture = IconLoader.get_icon("story_marker")
 		var label := Label.new()
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		label.text = "%s · %s · %s" % [str(member.get("name", "Ученик")), str(member.get("role", "Участник")), str(member.get("power", 0))]
 		var gift_button := Button.new()
 		gift_button.text = "Поддержать"
-		gift_button.modulate = UITheme.COLOR_GOLD
-		gift_button.add_theme_color_override("font_color", UITheme.COLOR_BG)
+		gift_button.icon = IconLoader.get_currency_icon("jade")
+		UITheme.apply_accent_button(gift_button, true)
 		gift_button.pressed.connect(_donate.bind(str(member.get("name", "Ученик"))))
+		row.add_child(icon)
 		row.add_child(label)
 		row.add_child(gift_button)
-		member_list.add_child(row)
+		member_list.add_child(card)
 
 func _donate(member_name: String) -> void:
 	if not PlayerState.spend_currency("gold", 500):

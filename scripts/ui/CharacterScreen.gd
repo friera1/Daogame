@@ -2,6 +2,7 @@ extends Control
 
 const CHARACTER_BG_PATH := "res://assets/art/generated/hero_portrait_primary.png"
 const PORTRAIT_ART_PATH := "res://assets/art/generated/hero_portrait_primary.png"
+const IconLoader = preload("res://scripts/ui/IconLoader.gd")
 
 @onready var name_label: Label = %NameLabel
 @onready var power_label: Label = %PowerLabel
@@ -11,6 +12,7 @@ const PORTRAIT_ART_PATH := "res://assets/art/generated/hero_portrait_primary.png
 @onready var portrait_art: TextureRect = %PortraitArt
 
 func _ready() -> void:
+	UITheme.apply_lobby_style(self)
 	_apply_art()
 	var profile := PlayerState.profile
 	name_label.text = "%s · Ур. %d" % [PlayerState.get_name(), PlayerState.get_level()]
@@ -23,6 +25,9 @@ func _ready() -> void:
 		"• Сервер: %s\n" % str(profile.get("server_id", "s1")) + \
 		"• Титул: Наследник нефритового меча\n" + \
 		"• Снаряжение доступно на отдельном экране"
+	$Panel.add_theme_stylebox_override("panel", UITheme.make_card_style(UITheme.COLOR_GOLD_DARK))
+	$Panel/VBox/Header/EquipmentButton.icon = IconLoader.get_item_icon("jade_sword_01")
+	UITheme.apply_accent_button($Panel/VBox/Header/EquipmentButton, true)
 
 func _apply_art() -> void:
 	var bg := ArtLoader.load_texture_safe(CHARACTER_BG_PATH)

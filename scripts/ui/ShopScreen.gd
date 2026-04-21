@@ -34,8 +34,13 @@ func _refresh() -> void:
 		child.queue_free()
 	for offer in ConfigRepository.shop_offers.get("offers", []):
 		var offer_id := str(offer.get("id", ""))
+		var card := PanelContainer.new()
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		UITheme.apply_card(card, UITheme.COLOR_GOLD_DARK)
 		var row := HBoxContainer.new()
 		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_theme_constant_override("separation", 12)
+		card.add_child(row)
 		var icon := TextureRect.new()
 		icon.custom_minimum_size = Vector2(44, 44)
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -47,18 +52,18 @@ func _refresh() -> void:
 		var open_button := Button.new()
 		open_button.text = "Детали"
 		open_button.icon = IconLoader.get_skill_icon("jade_guard")
+		UITheme.apply_accent_button(open_button, false)
 		open_button.pressed.connect(_show_offer.bind(offer_id))
 		var buy_button := Button.new()
 		buy_button.text = "Купить"
 		buy_button.icon = IconLoader.get_currency_icon("jade")
-		buy_button.modulate = UITheme.COLOR_GOLD
-		buy_button.add_theme_color_override("font_color", UITheme.COLOR_BG)
+		UITheme.apply_accent_button(buy_button, true)
 		buy_button.pressed.connect(_buy_offer.bind(offer))
 		row.add_child(icon)
 		row.add_child(label)
 		row.add_child(open_button)
 		row.add_child(buy_button)
-		offer_list.add_child(row)
+		offer_list.add_child(card)
 	if ConfigRepository.shop_offers.get("offers", []).size() > 0:
 		_show_offer(str(ConfigRepository.shop_offers.get("offers", [])[0].get("id", "")))
 

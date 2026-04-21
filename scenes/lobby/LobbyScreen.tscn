@@ -41,7 +41,7 @@ layout_mode = 1
 offset_left = 16.0
 offset_top = 16.0
 offset_right = 704.0
-offset_bottom = 118.0
+offset_bottom = 132.0
 
 [node name="TopMargin" type="MarginContainer" parent="TopBar"]
 layout_mode = 2
@@ -52,6 +52,7 @@ theme_override_constants/margin_bottom = 12
 
 [node name="TopHBox" type="HBoxContainer" parent="TopBar/TopMargin"]
 layout_mode = 2
+theme_override_constants/separation = 14
 
 [node name="ProfileBox" type="VBoxContainer" parent="TopBar/TopMargin/TopHBox"]
 layout_mode = 2
@@ -79,18 +80,49 @@ text = "588.3M / 600M"
 
 [node name="CurrencyBox" type="VBoxContainer" parent="TopBar/TopMargin/TopHBox"]
 layout_mode = 2
+theme_override_constants/separation = 4
 
-[node name="StonesLabel" type="Label" parent="TopBar/TopMargin/TopHBox/CurrencyBox"]
+[node name="SpiritStoneRow" type="HBoxContainer" parent="TopBar/TopMargin/TopHBox/CurrencyBox"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="SpiritStoneIcon" type="TextureRect" parent="TopBar/TopMargin/TopHBox/CurrencyBox/SpiritStoneRow"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(24, 24)
+stretch_mode = 5
+
+[node name="StonesLabel" type="Label" parent="TopBar/TopMargin/TopHBox/CurrencyBox/SpiritStoneRow"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "420"
 
-[node name="BoundLabel" type="Label" parent="TopBar/TopMargin/TopHBox/CurrencyBox"]
+[node name="BoundStoneRow" type="HBoxContainer" parent="TopBar/TopMargin/TopHBox/CurrencyBox"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="BoundStoneIcon" type="TextureRect" parent="TopBar/TopMargin/TopHBox/CurrencyBox/BoundStoneRow"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(24, 24)
+stretch_mode = 5
+
+[node name="BoundLabel" type="Label" parent="TopBar/TopMargin/TopHBox/CurrencyBox/BoundStoneRow"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "1520"
 
-[node name="JadeLabel" type="Label" parent="TopBar/TopMargin/TopHBox/CurrencyBox"]
+[node name="JadeRow" type="HBoxContainer" parent="TopBar/TopMargin/TopHBox/CurrencyBox"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="JadeIcon" type="TextureRect" parent="TopBar/TopMargin/TopHBox/CurrencyBox/JadeRow"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(24, 24)
+stretch_mode = 5
+
+[node name="JadeLabel" type="Label" parent="TopBar/TopMargin/TopHBox/CurrencyBox/JadeRow"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "60"
@@ -103,24 +135,24 @@ text = "Почта"
 unique_name_in_owner = true
 layout_mode = 1
 offset_left = 24.0
-offset_top = 126.0
+offset_top = 140.0
 offset_right = 320.0
-offset_bottom = 150.0
+offset_bottom = 164.0
 text = "Сила: 182340"
 
 [node name="StatusLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 1
 offset_left = 24.0
-offset_top = 154.0
+offset_top = 168.0
 offset_right = 680.0
-offset_bottom = 184.0
+offset_bottom = 198.0
 text = "Оффлайн-награды"
 
 [node name="HeroPanel" type="PanelContainer" parent="."]
 layout_mode = 1
 offset_left = 150.0
-offset_top = 190.0
+offset_top = 200.0
 offset_right = 570.0
 offset_bottom = 1030.0
 
@@ -171,7 +203,8 @@ layout_mode = 1
 offset_left = 20.0
 offset_top = 260.0
 offset_right = 130.0
-offset_bottom = 740.0
+offset_bottom = 780.0
+theme_override_constants/separation = 10
 
 [node name="StoryButton" type="Button" parent="LeftMenu"]
 layout_mode = 2
@@ -199,6 +232,7 @@ offset_left = 586.0
 offset_top = 250.0
 offset_right = 698.0
 offset_bottom = 860.0
+theme_override_constants/separation = 10
 
 [node name="InventoryButton" type="Button" parent="RightMenu"]
 layout_mode = 2
@@ -264,19 +298,19 @@ text = "Общение"
 
 [connection signal="pressed" from="TopBar/TopMargin/TopHBox/MailButton" to="." method="_on_mail_pressed"]
 [connection signal="pressed" from="MainCTAButton" to="." method="_on_cultivation_pressed"]
-[connection signal="pressed" from="CharacterButton" to="." method="_on_character_pressed"]
-[connection signal="pressed" from="InventoryButton" to="." method="_on_inventory_pressed"]
-[connection signal="pressed" from="SkillsButton" to="." method="_on_skills_pressed"]
-[connection signal="pressed" from="PetButton" to="." method="_on_pets_pressed"]
-[connection signal="pressed" from="ShopButton" to="." method="_on_shop_pressed"]
-[connection signal="pressed" from="SummonButton" to="." method="_on_summon_pressed"]
-[connection signal="pressed" from="BattleButton" to="." method="_on_battle_pressed"]
-[connection signal="pressed" from="StoryButton" to="." method="_on_story_pressed"]
-[connection signal="pressed" from="DailyButton" to="." method="_on_daily_pressed"]
-[connection signal="pressed" from="GuildButton" to="." method="_on_guild_pressed"]
-[connection signal="pressed" from="EventsButton" to="." method="_on_stub_pressed" binds=["События"]]
-[connection signal="pressed" from="HomeButton" to="." method="_on_stub_pressed" binds=["Дом"]]
-[connection signal="pressed" from="BottomStoryButton" to="." method="_on_story_pressed"]
-[connection signal="pressed" from="BottomGuildButton" to="." method="_on_guild_pressed"]
-[connection signal="pressed" from="BottomHomeButton" to="." method="_on_stub_pressed" binds=["Дом"]]
-[connection signal="pressed" from="SocialButton" to="." method="_on_mail_pressed"]
+[connection signal="pressed" from="BottomNav/CharacterButton" to="." method="_on_character_pressed"]
+[connection signal="pressed" from="RightMenu/InventoryButton" to="." method="_on_inventory_pressed"]
+[connection signal="pressed" from="RightMenu/SkillsButton" to="." method="_on_skills_pressed"]
+[connection signal="pressed" from="RightMenu/PetButton" to="." method="_on_pets_pressed"]
+[connection signal="pressed" from="RightMenu/ShopButton" to="." method="_on_shop_pressed"]
+[connection signal="pressed" from="RightMenu/SummonButton" to="." method="_on_summon_pressed"]
+[connection signal="pressed" from="LeftMenu/BattleButton" to="." method="_on_battle_pressed"]
+[connection signal="pressed" from="LeftMenu/StoryButton" to="." method="_on_story_pressed"]
+[connection signal="pressed" from="LeftMenu/DailyButton" to="." method="_on_daily_pressed"]
+[connection signal="pressed" from="LeftMenu/GuildButton" to="." method="_on_guild_pressed"]
+[connection signal="pressed" from="LeftMenu/EventsButton" to="." method="_on_stub_pressed" binds=["События"]]
+[connection signal="pressed" from="RightMenu/HomeButton" to="." method="_on_stub_pressed" binds=["Дом"]]
+[connection signal="pressed" from="BottomNav/BottomStoryButton" to="." method="_on_story_pressed"]
+[connection signal="pressed" from="BottomNav/BottomGuildButton" to="." method="_on_guild_pressed"]
+[connection signal="pressed" from="BottomNav/BottomHomeButton" to="." method="_on_stub_pressed" binds=["Дом"]]
+[connection signal="pressed" from="BottomNav/SocialButton" to="." method="_on_mail_pressed"]

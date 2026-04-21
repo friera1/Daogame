@@ -9,6 +9,7 @@ var story: Dictionary = {}
 var daily_missions: Dictionary = {}
 var shop_offers: Dictionary = {}
 var summon_pools: Dictionary = {}
+var tutorial: Dictionary = {}
 
 func load_all() -> void:
 	stages = _load_json("res://data/configs/stages.json")
@@ -20,6 +21,7 @@ func load_all() -> void:
 	daily_missions = _load_json("res://data/configs/daily_missions.json")
 	shop_offers = _load_json("res://data/configs/shop_offers.json")
 	summon_pools = _load_json("res://data/configs/summon_pools.json")
+	tutorial = _load_json("res://data/configs/tutorial_steps.json")
 
 func _load_json(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):

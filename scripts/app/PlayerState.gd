@@ -5,6 +5,7 @@ signal cultivation_changed
 signal currencies_changed
 signal skills_changed
 signal pets_changed
+signal equipment_changed
 
 var profile: Dictionary = {}
 
@@ -43,6 +44,16 @@ func get_currencies() -> Dictionary:
 
 func get_cultivation() -> Dictionary:
 	return profile.get("cultivation_progress", {})
+
+func get_equipment() -> Dictionary:
+	return profile.get("equipment", {})
+
+func equip_item(slot_id: String, item_id: String) -> void:
+	var equipment := get_equipment()
+	equipment[slot_id] = item_id
+	profile["equipment"] = equipment
+	save_profile()
+	emit_signal("equipment_changed")
 
 func refine_body() -> void:
 	var cult := get_cultivation()

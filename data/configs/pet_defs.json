@@ -1,0 +1,28 @@
+{
+  "pets": [
+    {
+      "id": "jade_crane",
+      "name": "Нефритовый журавль",
+      "rarity": "epic",
+      "element": "wind",
+      "role": "support",
+      "passive": "+5% к скорости культивации"
+    },
+    {
+      "id": "ember_fox",
+      "name": "Лисья искра",
+      "rarity": "rare",
+      "element": "fire",
+      "role": "damage",
+      "passive": "+3% к урону навыков"
+    },
+    {
+      "id": "stone_turtle",
+      "name": "Каменная черепаха",
+      "rarity": "rare",
+      "element": "earth",
+      "role": "defense",
+      "passive": "+4% к защите"
+    }
+  ]
+}

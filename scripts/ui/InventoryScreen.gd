@@ -7,6 +7,7 @@ const IconLoader = preload("res://scripts/ui/IconLoader.gd")
 func _ready() -> void:
 	UITheme.apply_lobby_style(self)
 	_refresh_list()
+	PlayerState.inventory_changed.connect(_refresh_list)
 
 func _refresh_list() -> void:
 	for child in list_container.get_children():

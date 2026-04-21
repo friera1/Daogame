@@ -7,17 +7,26 @@ const SUMMON_BANNER_PATH := "res://assets/art/generated/summon_banner_primary.pn
 @onready var info_label: RichTextLabel = %InfoLabel
 @onready var summon_background_art: TextureRect = %SummonBackgroundArt
 @onready var banner_art: TextureRect = %BannerArt
+@onready var header_title: Label = %HeaderTitle
 
 var current_banner: Dictionary = {}
 var pity_counter := 0
 
 func _ready() -> void:
+	UITheme.apply_lobby_style(self)
+	_apply_visual_polish()
 	_apply_art()
 	var banners := ConfigRepository.summon_pools.get("banners", [])
 	if banners.size() > 0:
 		current_banner = banners[0]
 		banner_label.text = str(current_banner.get("title", "Призыв"))
 		_refresh_info("Готов к призыву")
+
+func _apply_visual_polish() -> void:
+	header_title.add_theme_color_override("font_color", UITheme.COLOR_GOLD)
+	header_title.add_theme_font_size_override("font_size", 28)
+	banner_label.add_theme_color_override("font_color", UITheme.COLOR_GOLD)
+	banner_label.add_theme_font_size_override("font_size", 24)
 
 func _apply_art() -> void:
 	var bg := ArtLoader.load_texture_safe(SUMMON_BG_PATH)

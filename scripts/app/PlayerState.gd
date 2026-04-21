@@ -166,6 +166,40 @@ func add_inventory_item(item_id: String, quantity: int = 1, rarity: String = "co
 	save_profile()
 	emit_signal("inventory_changed")
 
+func consume_inventory_item(item_id: String, quantity: int = 1) -> bool:
+	var inventory := get_inventory()
+	for i in range(inventory.size()):
+		if str(inventory[i].get("item_id", "")) != item_id:
+			continue
+		var current := int(inventory[i].get("quantity", 0))
+		if current < quantity:
+			return false
+		inventory[i]["quantity"] = current - quantity
+		if int(inventory[i].get("quantity", 0)) <= 0:
+			inventory.remove_at(i)
+		profile["inventory"] = inventory
+		save_profile()
+		emit_signal("inventory_changed")
+		return true
+	return false
+
+func use_inventory_item(item_id: String) -> String:
+	var item_def := ConfigRepository.get_item_def(item_id)
+	var item_type := str(item_def.get("type", ""))
+	if item_type == "consumable":
+		if not consume_inventory_item(item_id, 1):
+			return "Предмет закончился"
+		var qi_gain := int(item_def.get("qi_gain", 0))
+		if qi_gain > 0:
+			add_qi(qi_gain * 10000)
+		return "%s использован, получено %d Ци" % [ConfigRepository.get_item_name(item_id), qi_gain]
+	if item_type == "material" and item_id == "breakthrough_stone":
+		if not consume_inventory_item(item_id, 1):
+			return "Камень прорыва отсутствует"
+		add_currency("bound_spirit_stone", 50)
+		return "Камень прорыва преобразован в 50 связанных духовных камней"
+	return "Этот предмет пока нельзя использовать напрямую"
+
 func get_skills() -> Array:
 	return profile.get("skills", [])
 

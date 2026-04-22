@@ -182,9 +182,47 @@ func perform_story_sweep(chapter_id: String, node_id: String, chapter_index: int
 		"chapter_index": chapter_index,
 		"enemy_name": enemy_name,
 		"stamina_spent": STORY_SWEEP_STAMINA_COST,
+		"runs": 1,
 		"rewards": rewards,
 		"text": "Быстрый проход выполнен"
 	}
+
+func perform_multi_story_sweep(chapter_id: String, node_id: String, chapter_index: int, enemy_name: String, runs: int) -> Dictionary:
+	if runs <= 0:
+		return {"ok": false, "text": "Некорректное число проходов"}
+	if not has_completed_story_battle(node_id):
+		return {"ok": false, "text": "Сначала нужно пройти этот бой вручную"}
+	var total_cost := STORY_SWEEP_STAMINA_COST * runs
+	if not PlayerState.spend_stamina(total_cost):
+		return {"ok": false, "text": "Недостаточно энергии для серии проходов"}
+	var total_rewards := {"gold": 0, "qi_essence": 0, "spirit_stone": 0, "items": []}
+	for i in range(runs):
+		var rewards := _build_story_rewards(chapter_index, true)
+		total_rewards["gold"] = int(total_rewards.get("gold", 0)) + int(rewards.get("gold", 0))
+		total_rewards["qi_essence"] = int(total_rewards.get("qi_essence", 0)) + int(rewards.get("qi_essence", 0))
+		total_rewards["spirit_stone"] = int(total_rewards.get("spirit_stone", 0)) + int(rewards.get("spirit_stone", 0))
+		for item in rewards.get("items", []):
+			total_rewards["items"].append(item)
+	_grant_rewards(total_rewards)
+	return {
+		"ok": true,
+		"chapter_id": chapter_id,
+		"node_id": node_id,
+		"chapter_index": chapter_index,
+		"enemy_name": enemy_name,
+		"stamina_spent": total_cost,
+		"runs": runs,
+		"rewards": total_rewards,
+		"text": "Серия быстрых проходов выполнена"
+	}
+
+func perform_story_auto_farm(chapter_id: String, node_id: String, chapter_index: int, enemy_name: String) -> Dictionary:
+	var stamina := PlayerState.refresh_stamina()
+	var available_runs := int(stamina.get("current", 0)) / STORY_SWEEP_STAMINA_COST
+	available_runs = min(available_runs, 5)
+	if available_runs <= 0:
+		return {"ok": false, "text": "Недостаточно энергии для автофарма"}
+	return perform_multi_story_sweep(chapter_id, node_id, chapter_index, enemy_name, available_runs)
 
 func claim_last_battle_rewards() -> Dictionary:
 	if has_claimed_battle_rewards():

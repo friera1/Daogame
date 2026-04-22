@@ -69,14 +69,24 @@ func _show_chapter(chapter_id: String) -> void:
 			var label := Label.new()
 			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			label.text = "%s %s" % [badge, str(node.get("title", "Узел"))]
+			var action_box := HBoxContainer.new()
+			action_box.add_theme_constant_override("separation", 8)
 			var action := Button.new()
 			action.text = _node_action_text(node_type, claimed, battle_done)
 			UITheme.apply_accent_button(action, node_type == "reward" or battle_done)
-			action.disabled = claimed or battle_done
+			action.disabled = claimed or (battle_done and node_type != "battle")
 			action.pressed.connect(_open_node.bind(node, chapter_id))
+			action_box.add_child(action)
+			if node_type == "battle" and battle_done:
+				var sweep_button := Button.new()
+				sweep_button.text = "Sweep"
+				sweep_button.icon = IconLoader.get_currency_icon("bound_spirit_stone")
+				UITheme.apply_accent_button(sweep_button, true)
+				sweep_button.pressed.connect(_sweep_node.bind(node, chapter_id))
+				action_box.add_child(sweep_button)
 			row.add_child(icon)
 			row.add_child(label)
-			row.add_child(action)
+			row.add_child(action_box)
 			node_list.add_child(card)
 		return
 
@@ -91,7 +101,7 @@ func _node_action_text(node_type: String, claimed: bool, battle_done: bool) -> S
 	if node_type == "reward":
 		return "Получено" if claimed else "Открыть"
 	if node_type == "battle":
-		return "Пройден" if battle_done else "В бой"
+		return "Повтор" if battle_done else "В бой"
 	return "Открыть"
 
 func _node_icon(node_type: String) -> Texture2D:
@@ -127,6 +137,26 @@ func _open_node(node: Dictionary, chapter_id: String) -> void:
 		return
 	info_label.text = "[b]%s[/b]\n\n%s" % [str(node.get("title", "Узел")), _node_description(node_type)]
 
+func _sweep_node(node: Dictionary, chapter_id: String) -> void:
+	var result := GameSession.perform_story_sweep(chapter_id, str(node.get("id", "")), _chapter_index(chapter_id), str(node.get("title", "Страж главы")))
+	if not bool(result.get("ok", false)):
+		info_label.text = "[b]%s[/b]\n\n%s" % [str(node.get("title", "Узел")), str(result.get("text", "Sweep недоступен"))]
+		return
+	OnlineSyncService.queue_action("story_sweep", {
+		"chapter_id": chapter_id,
+		"node_id": str(node.get("id", "")),
+		"chapter_index": _chapter_index(chapter_id),
+		"enemy_name": str(node.get("title", "Страж главы")),
+		"stamina_spent": int(result.get("stamina_spent", 0)),
+		"rewards": result.get("rewards", {})
+	})
+	info_label.text = "[b]%s[/b]\n\nБыстрый проход выполнен за %d энергии.\n\nПолучено:\n%s" % [
+		str(node.get("title", "Узел")),
+		int(result.get("stamina_spent", 0)),
+		_format_sweep_rewards(result.get("rewards", {}))
+	]
+	_refresh_chapters()
+
 func _claim_reward_node(node: Dictionary) -> void:
 	var node_id := str(node.get("id", ""))
 	if GameSession.has_claimed_story_reward(node_id):
@@ -143,6 +173,16 @@ func _format_rewards(rewards: Dictionary) -> String:
 	var lines: Array[String] = []
 	for currency_id in rewards.keys():
 		lines.append("• %s: %s" % [str(currency_id), str(rewards[currency_id])])
+	return "\n".join(lines)
+
+func _format_sweep_rewards(rewards: Dictionary) -> String:
+	var lines: Array[String] = [
+		"• gold: %s" % str(rewards.get("gold", 0)),
+		"• qi_essence: %s" % str(rewards.get("qi_essence", 0)),
+		"• spirit_stone: %s" % str(rewards.get("spirit_stone", 0))
+	]
+	for item in rewards.get("items", []):
+		lines.append("• %s x%s" % [ConfigRepository.get_item_name(str(item.get("id", ""))), str(item.get("quantity", 1))])
 	return "\n".join(lines)
 
 func _node_description(node_type: String) -> String:

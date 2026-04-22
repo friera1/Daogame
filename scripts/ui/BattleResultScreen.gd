@@ -37,6 +37,7 @@ func _claim_if_needed() -> void:
 		"context": result.get("context", {}),
 		"rewards": rewards
 	})
+	GameSession.clear_battle_context()
 	_refresh_rewards_text()
 
 func _on_continue_pressed() -> void:

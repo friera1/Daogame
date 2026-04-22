@@ -116,6 +116,52 @@ func _add_attendance_card() -> void:
 
 	mission_list.add_child(card)
 
+func _add_event_dungeon_card() -> void:
+	var state := GameSession.get_event_dungeon_state()
+	var remaining := int(state.get("remaining_runs", 0))
+	var max_runs := int(state.get("max_runs", 0))
+	var card := PanelContainer.new()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	UITheme.apply_card(card, UITheme.COLOR_WARNING if remaining > 0 else UITheme.COLOR_TEXT_SECONDARY)
+
+	var root := VBoxContainer.new()
+	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	root.add_theme_constant_override("separation", 8)
+	card.add_child(root)
+
+	var header := HBoxContainer.new()
+	header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_theme_constant_override("separation", 12)
+	root.add_child(header)
+
+	var icon := TextureRect.new()
+	icon.custom_minimum_size = Vector2(44, 44)
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.texture = IconLoader.get_item_icon("breakthrough_stone")
+
+	var label := Label.new()
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var badge := "[EVENT OPEN]" if remaining > 0 else "[LIMIT REACHED]"
+	label.text = "%s %s · попытки %d/%d" % [badge, str(state.get("title", "Ивент-подземелье")), remaining, max_runs]
+
+	var enter_button := Button.new()
+	enter_button.text = "Войти"
+	enter_button.icon = IconLoader.get_skill_icon("azure_slash")
+	UITheme.apply_accent_button(enter_button, true)
+	enter_button.disabled = remaining <= 0
+	enter_button.pressed.connect(_enter_event_dungeon)
+
+	header.add_child(icon)
+	header.add_child(label)
+	header.add_child(enter_button)
+
+	var info := Label.new()
+	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	info.text = "Противник: %s · Цена входа: %d энергии · Награды: золото, нефрит, материалы прорыва." % [str(state.get("enemy_name", "Хранитель")), int(state.get("stamina_cost", 0))]
+	root.add_child(info)
+
+	mission_list.add_child(card)
+
 func _refresh() -> void:
 	GameSession.refresh_live_ops_state()
 	for child in mission_list.get_children():
@@ -128,6 +174,7 @@ func _refresh() -> void:
 	var reset_state := GameSession.get_daily_reset_status()
 	summary_label.text = "Активных поручений: %d · Забрано: %d · Сброс через %s" % [missions.size(), claimed_count, _format_reset(int(reset_state.get("seconds_until_reset", 0)))]
 	_add_attendance_card()
+	_add_event_dungeon_card()
 	for mission in missions:
 		var mission_id := str(mission.get("id", mission.get("title", "mission")))
 		var claimed := GameSession.has_claimed_daily_mission(mission_id)
@@ -163,6 +210,21 @@ func _claim_attendance() -> void:
 	if bool(result.get("claimed", false)):
 		OnlineSyncService.queue_action("daily_login_claim", result)
 	_refresh()
+
+func _enter_event_dungeon() -> void:
+	var state := GameSession.get_event_dungeon_state()
+	if int(state.get("remaining_runs", 0)) <= 0:
+		summary_label.text = "Попытки ивент-подземелья на сегодня закончились."
+		_refresh()
+		return
+	GameSession.set_battle_context({
+		"source": "event_dungeon",
+		"chapter_index": 3 + int(state.get("cycle", 0)),
+		"event_id": str(state.get("event_id", "event_dungeon_0")),
+		"enemy_name": str(state.get("enemy_name", "Хранитель жилы"))
+	})
+	OnlineSyncService.queue_action("event_dungeon_enter", {"event_id": str(state.get("event_id", "event_dungeon_0"))})
+	SceneRouter.goto_scene("res://scenes/battle/BattleScreen.tscn")
 
 func _claim_reward(mission: Dictionary) -> void:
 	var mission_id := str(mission.get("id", mission.get("title", "mission")))

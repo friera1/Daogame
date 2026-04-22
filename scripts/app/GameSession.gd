@@ -2,11 +2,8 @@ extends Node
 
 var is_initialized: bool = false
 var last_battle_result: Dictionary = {}
-var claimed_story_rewards: Dictionary = {}
 var claimed_daily_missions: Dictionary = {}
 var pending_battle_context: Dictionary = {}
-var completed_story_battles: Dictionary = {}
-var unlocked_story_chapters: Dictionary = {"chapter_01": true}
 
 func initialize() -> void:
 	if is_initialized:
@@ -17,10 +14,10 @@ func initialize() -> void:
 	is_initialized = true
 
 func has_claimed_story_reward(node_id: String) -> bool:
-	return bool(claimed_story_rewards.get(node_id, false))
+	return PlayerState.has_claimed_story_reward(node_id)
 
 func mark_story_reward_claimed(node_id: String) -> void:
-	claimed_story_rewards[node_id] = true
+	PlayerState.mark_story_reward_claimed(node_id)
 
 func has_claimed_daily_mission(mission_id: String) -> bool:
 	return bool(claimed_daily_missions.get(mission_id, false))
@@ -41,16 +38,16 @@ func has_claimed_battle_rewards() -> bool:
 	return bool(last_battle_result.get("claimed", false))
 
 func has_completed_story_battle(node_id: String) -> bool:
-	return bool(completed_story_battles.get(node_id, false))
+	return PlayerState.has_completed_story_battle(node_id)
 
 func is_story_chapter_unlocked(chapter_id: String) -> bool:
-	return bool(unlocked_story_chapters.get(chapter_id, false))
+	return PlayerState.is_story_chapter_unlocked(chapter_id)
 
 func mark_story_battle_completed(node_id: String, chapter_id: String) -> void:
-	completed_story_battles[node_id] = true
+	PlayerState.mark_story_battle_completed(node_id)
 	var next_id := _next_chapter_id(chapter_id)
 	if not next_id.is_empty():
-		unlocked_story_chapters[next_id] = true
+		PlayerState.unlock_story_chapter(next_id)
 
 func _next_chapter_id(chapter_id: String) -> String:
 	var chapters := ConfigRepository.story.get("chapters", [])

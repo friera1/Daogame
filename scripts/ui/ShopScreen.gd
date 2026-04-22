@@ -30,14 +30,17 @@ func _apply_art() -> void:
 		banner_art.texture = banner
 
 func _refresh() -> void:
+	GameSession.refresh_live_ops_state()
 	for child in offer_list.get_children():
 		child.queue_free()
 	var jade_balance := int(PlayerState.get_currencies().get("jade", 0))
 	for offer in ConfigRepository.shop_offers.get("offers", []):
 		var offer_id := str(offer.get("id", ""))
 		var price := int(offer.get("price_jade", 0))
-		var affordable := jade_balance >= price
-		var badge := "[ГОТОВО]" if affordable else "[НЕТ НЕФРИТА]"
+		var live_state := GameSession.get_shop_offer_state(offer_id)
+		var enabled := bool(live_state.get("enabled", true))
+		var affordable := jade_balance >= price and enabled
+		var badge := "[ROTATION]" if not enabled else "[ГОТОВО]" if affordable else "[НЕТ НЕФРИТА]"
 		var card := PanelContainer.new()
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		UITheme.apply_card(card, UITheme.COLOR_GOLD_DARK if affordable else UITheme.COLOR_JADE_DARK)
@@ -78,19 +81,28 @@ func _show_offer(offer_id: String) -> void:
 			continue
 		var price := int(offer.get("price_jade", 0))
 		var jade_balance := int(PlayerState.get_currencies().get("jade", 0))
-		var state := "доступно" if jade_balance >= price else "не хватает нефрита"
-		detail_label.text = "[b]%s[/b]\n\nТег: %s\nЦена: %s нефрита\nКоличество: %s %s\nСтатус: %s" % [
+		var live_state := GameSession.get_shop_offer_state(offer_id)
+		var enabled := bool(live_state.get("enabled", true))
+		var state := "ротация закрыта" if not enabled else "доступно" if jade_balance >= price else "не хватает нефрита"
+		detail_label.text = "[b]%s[/b]\n\nТег: %s\nЦена: %s нефрита\nКоличество: %s %s\nLive-cycle: %s\nСтатус: %s" % [
 			str(offer.get("title", offer_id)),
 			str(offer.get("tag", "daily")),
 			str(price),
 			str(offer.get("amount", 0)),
 			str(offer.get("currency", "item")),
+			str(live_state.get("cycle", 0)),
 			state
 		]
 		return
 	detail_label.text = "Предложение не найдено"
 
 func _buy_offer(offer: Dictionary) -> void:
+	var offer_id := str(offer.get("id", ""))
+	var live_state := GameSession.get_shop_offer_state(offer_id)
+	if not bool(live_state.get("enabled", true)):
+		detail_label.text = "[b]Предложение временно недоступно[/b]"
+		_refresh()
+		return
 	var price := int(offer.get("price_jade", 0))
 	if not PlayerState.spend_currency("jade", price):
 		detail_label.text = "[b]Недостаточно нефрита[/b]"
@@ -99,10 +111,13 @@ func _buy_offer(offer: Dictionary) -> void:
 	var currency_id := str(offer.get("currency", "gold"))
 	var amount := int(offer.get("amount", 0))
 	if currency_id == "breakthrough_stone":
-		detail_label.text = "[b]Покупка совершена[/b]\n\nНабор прорыва отмечен как купленный. Интеграция в инвентарь будет следующим шагом."
+		PlayerState.add_inventory_item("breakthrough_stone", amount, "epic")
+		OnlineSyncService.queue_action("shop_purchase", {"offer_id": offer_id, "amount": amount, "currency_id": currency_id})
+		detail_label.text = "[b]Покупка совершена[/b]\n\nПолучено: %s x%s" % [currency_id, str(amount)]
 		_refresh()
 		return
 	PlayerState.add_currency(currency_id, amount)
+	OnlineSyncService.queue_action("shop_purchase", {"offer_id": offer_id, "amount": amount, "currency_id": currency_id})
 	detail_label.text = "[b]Покупка совершена[/b]\n\nПолучено: %s %s" % [str(amount), currency_id]
 	_refresh()
 

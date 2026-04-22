@@ -14,6 +14,9 @@ signal attendance_changed
 signal stamina_changed
 signal mailbox_changed
 
+const MAILBOX_CAP := 40
+const DEFAULT_MAIL_LIFETIME_SEC := 604800
+
 var profile: Dictionary = {}
 
 func load_mock_profile() -> void:
@@ -64,6 +67,7 @@ func _ensure_profile_defaults() -> void:
 		if not mailbox.has("inbox_messages"):
 			mailbox["inbox_messages"] = []
 		profile["mailbox_progress"] = mailbox
+	_prune_inbox_messages(false)
 
 func save_profile() -> void:
 	SaveService.save_profile(profile)
@@ -119,17 +123,55 @@ func get_stamina_progress() -> Dictionary:
 func get_mailbox_progress() -> Dictionary:
 	return profile.get("mailbox_progress", {"claimed_messages": {}, "generated_keys": {}, "inbox_messages": []})
 
+func _mail_expired(message: Dictionary) -> bool:
+	var expires_at := int(message.get("expires_at", 0))
+	return expires_at > 0 and int(Time.get_unix_time_from_system()) >= expires_at
+
 func get_inbox_messages() -> Array:
+	_prune_inbox_messages(false)
 	return get_mailbox_progress().get("inbox_messages", [])
+
+func get_unclaimed_mail_count() -> int:
+	var count := 0
+	for message in get_inbox_messages():
+		if not has_claimed_mail(str(message.get("id", ""))):
+			count += 1
+	return count
 
 func add_inbox_message(message: Dictionary) -> void:
 	var mailbox_progress := get_mailbox_progress()
 	var inbox := get_inbox_messages()
-	inbox.append(message)
+	var entry := message.duplicate(true)
+	if not entry.has("created_at"):
+		entry["created_at"] = int(Time.get_unix_time_from_system())
+	if not entry.has("expires_at"):
+		entry["expires_at"] = int(entry.get("created_at", Time.get_unix_time_from_system())) + DEFAULT_MAIL_LIFETIME_SEC
+	inbox.append(entry)
 	mailbox_progress["inbox_messages"] = inbox
 	profile["mailbox_progress"] = mailbox_progress
+	_prune_inbox_messages(true)
 	save_profile()
 	emit_signal("mailbox_changed")
+
+func _prune_inbox_messages(keep_latest: bool) -> void:
+	var mailbox_progress := get_mailbox_progress()
+	var inbox: Array = mailbox_progress.get("inbox_messages", [])
+	var filtered: Array = []
+	for message in inbox:
+		if _mail_expired(message) and has_claimed_mail(str(message.get("id", ""))):
+			continue
+		if _mail_expired(message):
+			continue
+		filtered.append(message)
+	if filtered.size() > MAILBOX_CAP:
+		filtered.sort_custom(func(a, b): return int(a.get("created_at", 0)) < int(b.get("created_at", 0)))
+		while filtered.size() > MAILBOX_CAP:
+			if keep_latest:
+				filtered.remove_at(0)
+			else:
+				filtered.remove_at(0)
+	mailbox_progress["inbox_messages"] = filtered
+	profile["mailbox_progress"] = mailbox_progress
 
 func has_generated_mail_key(mail_key: String) -> bool:
 	return bool(get_mailbox_progress().get("generated_keys", {}).get(mail_key, false))
@@ -152,6 +194,7 @@ func mark_mail_claimed(message_id: String) -> void:
 	claimed[message_id] = true
 	mailbox_progress["claimed_messages"] = claimed
 	profile["mailbox_progress"] = mailbox_progress
+	_prune_inbox_messages(true)
 	save_profile()
 	emit_signal("mailbox_changed")
 

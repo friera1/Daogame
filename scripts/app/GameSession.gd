@@ -14,6 +14,7 @@ func initialize() -> void:
 	IdleRewardService.mark_exit_time()
 	current_daily_key = _today_key_utc()
 	_apply_daily_reset_if_needed()
+	_ensure_system_mail_generated()
 	is_initialized = true
 
 func _today_key_utc() -> String:
@@ -31,6 +32,32 @@ func _apply_daily_reset_if_needed() -> void:
 		return
 	claimed_daily_missions.clear()
 	current_daily_key = today
+	_ensure_system_mail_generated()
+
+func _ensure_system_mail_generated() -> void:
+	var daily_key := "daily_supply_%s" % current_daily_key
+	if not PlayerState.has_generated_mail_key(daily_key):
+		PlayerState.add_inbox_message({
+			"id": daily_key,
+			"title": "Ежедневные припасы",
+			"from": "Небесная канцелярия",
+			"body": "Сегодняшний путь благосклонен. Забери ежедневные припасы культиватора.",
+			"claimed": false,
+			"rewards": {"gold": 1200, "bound_spirit_stone": 40, "items": [{"id": "stamina_pill_small", "quantity": 1, "rarity": "rare"}]}
+		})
+		PlayerState.mark_generated_mail_key(daily_key)
+	var banner_state := get_banner_live_state("default_banner")
+	var banner_key := "banner_notice_%s_%s" % [current_daily_key, str(banner_state.get("cycle", 0))]
+	if not PlayerState.has_generated_mail_key(banner_key):
+		PlayerState.add_inbox_message({
+			"id": banner_key,
+			"title": "Сводка ротации баннера",
+			"from": "Архив духовных знамений",
+			"body": "Цикл баннера обновлён. Проверь текущую ротацию редких призывов и предложения дня.",
+			"claimed": false,
+			"rewards": {"jade": 5, "stamina": 6}
+		})
+		PlayerState.mark_generated_mail_key(banner_key)
 
 func refresh_live_ops_state() -> void:
 	_apply_daily_reset_if_needed()

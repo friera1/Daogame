@@ -9,7 +9,13 @@ func _ready() -> void:
 	UITheme.apply_lobby_style(self)
 	_refresh()
 
+func _format_reset(seconds_until_reset: int) -> String:
+	var hours := seconds_until_reset / 3600
+	var minutes := (seconds_until_reset % 3600) / 60
+	return "%02d:%02d" % [hours, minutes]
+
 func _refresh() -> void:
+	GameSession.refresh_live_ops_state()
 	for child in mission_list.get_children():
 		child.queue_free()
 	var missions := ConfigRepository.daily_missions.get("missions", [])
@@ -17,7 +23,8 @@ func _refresh() -> void:
 	for mission in missions:
 		if GameSession.has_claimed_daily_mission(str(mission.get("id", mission.get("title", "mission")))):
 			claimed_count += 1
-	summary_label.text = "Активных поручений: %d · Забрано: %d" % [missions.size(), claimed_count]
+	var reset_state := GameSession.get_daily_reset_status()
+	summary_label.text = "Активных поручений: %d · Забрано: %d · Сброс через %s" % [missions.size(), claimed_count, _format_reset(int(reset_state.get("seconds_until_reset", 0)))]
 	for mission in missions:
 		var mission_id := str(mission.get("id", mission.get("title", "mission")))
 		var claimed := GameSession.has_claimed_daily_mission(mission_id)
@@ -55,6 +62,7 @@ func _claim_reward(mission: Dictionary) -> void:
 	var reward := int(mission.get("reward_gold", 0))
 	PlayerState.add_currency("gold", reward)
 	GameSession.mark_daily_mission_claimed(mission_id)
+	OnlineSyncService.queue_action("daily_claim", {"mission_id": mission_id, "reward_gold": reward})
 	summary_label.text = "Получено золота: %d" % reward
 	_refresh()
 

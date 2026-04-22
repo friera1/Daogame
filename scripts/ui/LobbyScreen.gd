@@ -28,6 +28,7 @@ const IconLoader = preload("res://scripts/ui/IconLoader.gd")
 @onready var spirit_stone_icon: TextureRect = %SpiritStoneIcon
 @onready var bound_stone_icon: TextureRect = %BoundStoneIcon
 @onready var jade_icon: TextureRect = %JadeIcon
+@onready var mail_button: Button = $TopBar/TopMargin/TopHBox/MailButton
 
 func _ready() -> void:
 	UITheme.apply_lobby_style(self)
@@ -41,6 +42,7 @@ func _ready() -> void:
 	PlayerState.skills_changed.connect(_refresh)
 	PlayerState.pets_changed.connect(_refresh)
 	PlayerState.stamina_changed.connect(_refresh)
+	PlayerState.mailbox_changed.connect(_refresh)
 	_show_idle_status()
 	_maybe_show_tutorial()
 
@@ -119,6 +121,10 @@ func _refresh() -> void:
 	stones_label.text = str(currencies.get("spirit_stone", 0))
 	bound_label.text = str(currencies.get("bound_spirit_stone", 0))
 	jade_label.text = str(currencies.get("jade", 0))
+
+	var mail_count := PlayerState.get_unclaimed_mail_count()
+	mail_button.text = "Почта" if mail_count <= 0 else "Почта (%d)" % mail_count
+	mail_button.modulate = UITheme.COLOR_GOLD if mail_count > 0 else Color(1, 1, 1, 1)
 
 	if bool(cult.get("breakthrough_ready", false)):
 		cta_button.text = "Прорыв"

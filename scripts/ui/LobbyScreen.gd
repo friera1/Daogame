@@ -15,6 +15,8 @@ const IconLoader = preload("res://scripts/ui/IconLoader.gd")
 @onready var jade_label: Label = %JadeLabel
 @onready var cta_button: Button = %MainCTAButton
 @onready var status_label: Label = %StatusLabel
+@onready var sync_status_label: Label = %SyncStatusLabel
+@onready var sync_flush_button: Button = %SyncFlushButton
 @onready var lobby_background_art: TextureRect = %LobbyBackgroundArt
 @onready var hero_art: TextureRect = %HeroArt
 @onready var hero_hint: Label = %HeroHint
@@ -50,6 +52,9 @@ func _apply_visual_polish() -> void:
 	cta_button.add_theme_color_override("font_color", UITheme.COLOR_BG)
 	cta_button.modulate = UITheme.COLOR_GOLD
 	status_label.add_theme_color_override("font_color", UITheme.COLOR_GOLD)
+	sync_status_label.add_theme_color_override("font_color", UITheme.COLOR_TEXT)
+	sync_flush_button.add_theme_font_size_override("font_size", 16)
+	UITheme.apply_accent_button(sync_flush_button, false)
 	hero_title.add_theme_color_override("font_color", UITheme.COLOR_GOLD)
 	hero_title.add_theme_font_size_override("font_size", 28)
 	hero_hint.add_theme_color_override("font_color", UITheme.COLOR_TEXT_SECONDARY)
@@ -69,6 +74,7 @@ func _apply_icons() -> void:
 	bound_stone_icon.texture = IconLoader.get_currency_icon("bound_spirit_stone")
 	jade_icon.texture = IconLoader.get_currency_icon("jade")
 	cta_button.icon = IconLoader.get_skill_icon("azure_slash")
+	sync_flush_button.icon = IconLoader.get_skill_icon("jade_guard")
 	$LeftMenu/StoryButton.icon = IconLoader.get_skill_icon("jade_guard")
 	$LeftMenu/EventsButton.icon = IconLoader.get_item_icon("breakthrough_stone")
 	$LeftMenu/GuildButton.icon = IconLoader.get_currency_icon("jade")
@@ -105,6 +111,12 @@ func _refresh() -> void:
 		cta_button.text = "Прорыв"
 	else:
 		cta_button.text = "Культивация"
+	_refresh_sync_status()
+
+func _refresh_sync_status() -> void:
+	var sync := OnlineSyncService.get_sync_status()
+	sync_status_label.text = "SYNC rev.%d · pending %d" % [int(sync.get("local_revision", 0)), int(sync.get("pending_count", 0))]
+	sync_status_label.modulate = UITheme.COLOR_GOLD if int(sync.get("pending_count", 0)) > 0 else UITheme.COLOR_SUCCESS
 
 func _show_idle_status() -> void:
 	var rewards := IdleRewardService.calculate_rewards()
@@ -120,6 +132,12 @@ func _format_big(value: int) -> String:
 	if value >= 1000:
 		return "%.1fK" % (float(value) / 1000.0)
 	return str(value)
+
+func _on_sync_flush_pressed() -> void:
+	OnlineSyncService.flush_pending_mock()
+	status_label.text = "Очередь синхронизации очищена mock-flush"
+	status_label.modulate = UITheme.COLOR_SUCCESS
+	_refresh_sync_status()
 
 func _on_cultivation_pressed() -> void:
 	SceneRouter.goto_scene("res://scenes/cultivation/CultivationScreen.tscn")
@@ -155,6 +173,11 @@ func _on_guild_pressed() -> void:
 	SceneRouter.goto_scene("res://scenes/guild/GuildScreen.tscn")
 
 func _on_battle_pressed() -> void:
+	GameSession.set_battle_context({
+		"source": "lobby",
+		"chapter_index": 1,
+		"enemy_name": "Страж духовных руин"
+	})
 	SceneRouter.goto_scene("res://scenes/battle/BattleScreen.tscn")
 
 func _on_stub_pressed(feature_name: String) -> void:

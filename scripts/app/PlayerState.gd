@@ -8,6 +8,7 @@ signal pets_changed
 signal equipment_changed
 signal tutorial_changed
 signal inventory_changed
+signal story_progress_changed
 
 var profile: Dictionary = {}
 
@@ -18,10 +19,7 @@ func load_mock_profile() -> void:
 		push_error("Failed to open mock player profile")
 		return
 	profile = JSON.parse_string(file.get_as_text())
-	if not profile.has("tutorial"):
-		profile["tutorial"] = {"completed": false, "step_index": 0}
-	if not profile.has("pet_shards"):
-		profile["pet_shards"] = {}
+	_ensure_profile_defaults()
 	save_profile()
 	emit_signal("player_loaded")
 
@@ -31,11 +29,20 @@ func load_or_create_profile() -> void:
 		load_mock_profile()
 		return
 	profile = saved
+	_ensure_profile_defaults()
+	emit_signal("player_loaded")
+
+func _ensure_profile_defaults() -> void:
 	if not profile.has("tutorial"):
 		profile["tutorial"] = {"completed": false, "step_index": 0}
 	if not profile.has("pet_shards"):
 		profile["pet_shards"] = {}
-	emit_signal("player_loaded")
+	if not profile.has("story_progress"):
+		profile["story_progress"] = {
+			"unlocked_chapters": {"chapter_01": true},
+			"completed_battles": {},
+			"claimed_rewards": {}
+		}
 
 func save_profile() -> void:
 	SaveService.save_profile(profile)
@@ -71,6 +78,45 @@ func get_pet_shards() -> Dictionary:
 
 func get_pet_shards_for(pet_id: String) -> int:
 	return int(get_pet_shards().get(pet_id, 0))
+
+func get_story_progress() -> Dictionary:
+	return profile.get("story_progress", {})
+
+func is_story_chapter_unlocked(chapter_id: String) -> bool:
+	return bool(get_story_progress().get("unlocked_chapters", {}).get(chapter_id, false))
+
+func unlock_story_chapter(chapter_id: String) -> void:
+	var story_progress := get_story_progress()
+	var unlocked := story_progress.get("unlocked_chapters", {})
+	unlocked[chapter_id] = true
+	story_progress["unlocked_chapters"] = unlocked
+	profile["story_progress"] = story_progress
+	save_profile()
+	emit_signal("story_progress_changed")
+
+func has_completed_story_battle(node_id: String) -> bool:
+	return bool(get_story_progress().get("completed_battles", {}).get(node_id, false))
+
+func mark_story_battle_completed(node_id: String) -> void:
+	var story_progress := get_story_progress()
+	var completed := story_progress.get("completed_battles", {})
+	completed[node_id] = true
+	story_progress["completed_battles"] = completed
+	profile["story_progress"] = story_progress
+	save_profile()
+	emit_signal("story_progress_changed")
+
+func has_claimed_story_reward(node_id: String) -> bool:
+	return bool(get_story_progress().get("claimed_rewards", {}).get(node_id, false))
+
+func mark_story_reward_claimed(node_id: String) -> void:
+	var story_progress := get_story_progress()
+	var claimed := story_progress.get("claimed_rewards", {})
+	claimed[node_id] = true
+	story_progress["claimed_rewards"] = claimed
+	profile["story_progress"] = story_progress
+	save_profile()
+	emit_signal("story_progress_changed")
 
 func set_tutorial_step(step_index: int) -> void:
 	var tutorial := get_tutorial()

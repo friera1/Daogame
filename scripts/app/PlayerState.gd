@@ -11,6 +11,7 @@ signal inventory_changed
 signal story_progress_changed
 signal summon_progress_changed
 signal attendance_changed
+signal stamina_changed
 
 var profile: Dictionary = {}
 
@@ -49,6 +50,8 @@ func _ensure_profile_defaults() -> void:
 		profile["summon_progress"] = {}
 	if not profile.has("attendance_progress"):
 		profile["attendance_progress"] = {"last_claim_key": "", "streak": 0, "total_days": 0}
+	if not profile.has("stamina_progress"):
+		profile["stamina_progress"] = {"current": 30, "max": 30, "last_regen_time": Time.get_unix_time_from_system(), "regen_interval_sec": 300}
 
 func save_profile() -> void:
 	SaveService.save_profile(profile)
@@ -98,6 +101,52 @@ func get_summon_progress() -> Dictionary:
 func get_attendance_progress() -> Dictionary:
 	return profile.get("attendance_progress", {"last_claim_key": "", "streak": 0, "total_days": 0})
 
+func get_stamina_progress() -> Dictionary:
+	return profile.get("stamina_progress", {"current": 30, "max": 30, "last_regen_time": Time.get_unix_time_from_system(), "regen_interval_sec": 300})
+
+func refresh_stamina() -> Dictionary:
+	var stamina := get_stamina_progress()
+	var current := int(stamina.get("current", 30))
+	var maximum := int(stamina.get("max", 30))
+	var last_regen := int(stamina.get("last_regen_time", Time.get_unix_time_from_system()))
+	var regen_interval := int(stamina.get("regen_interval_sec", 300))
+	var now := int(Time.get_unix_time_from_system())
+	if current >= maximum:
+		stamina["current"] = maximum
+		stamina["last_regen_time"] = now
+		profile["stamina_progress"] = stamina
+		return stamina
+	var elapsed := max(now - last_regen, 0)
+	var regen_points := elapsed / regen_interval
+	if regen_points > 0:
+		current = min(current + regen_points, maximum)
+		last_regen += regen_points * regen_interval
+		stamina["current"] = current
+		stamina["last_regen_time"] = last_regen
+		profile["stamina_progress"] = stamina
+		save_profile()
+		emit_signal("stamina_changed")
+	return profile.get("stamina_progress", stamina)
+
+func spend_stamina(amount: int) -> bool:
+	var stamina := refresh_stamina()
+	var current := int(stamina.get("current", 0))
+	if current < amount:
+		return false
+	stamina["current"] = current - amount
+	stamina["last_regen_time"] = int(Time.get_unix_time_from_system()) if int(stamina.get("current", 0)) < int(stamina.get("max", 30)) else int(stamina.get("last_regen_time", Time.get_unix_time_from_system()))
+	profile["stamina_progress"] = stamina
+	save_profile()
+	emit_signal("stamina_changed")
+	return true
+
+func add_stamina(amount: int) -> void:
+	var stamina := refresh_stamina()
+	stamina["current"] = min(int(stamina.get("current", 0)) + amount, int(stamina.get("max", 30)))
+	profile["stamina_progress"] = stamina
+	save_profile()
+	emit_signal("stamina_changed")
+
 func can_claim_daily_login() -> bool:
 	return str(get_attendance_progress().get("last_claim_key", "")) != _today_key_utc()
 
@@ -111,6 +160,7 @@ func claim_daily_login() -> Dictionary:
 	var reward_gold := 200 + streak * 50
 	var reward_bound := 20 + streak * 5
 	var reward_jade := 10 if streak == 7 else 0
+	var reward_stamina := 10 if streak == 3 else 0
 	attendance["last_claim_key"] = _today_key_utc()
 	attendance["streak"] = streak
 	attendance["total_days"] = int(attendance.get("total_days", 0)) + 1
@@ -119,6 +169,8 @@ func claim_daily_login() -> Dictionary:
 	add_currency("bound_spirit_stone", reward_bound)
 	if reward_jade > 0:
 		add_currency("jade", reward_jade)
+	if reward_stamina > 0:
+		add_stamina(reward_stamina)
 	save_profile()
 	emit_signal("attendance_changed")
 	return {
@@ -127,6 +179,7 @@ func claim_daily_login() -> Dictionary:
 		"gold": reward_gold,
 		"bound_spirit_stone": reward_bound,
 		"jade": reward_jade,
+		"stamina": reward_stamina,
 		"text": "Вход дня %d получен" % streak
 	}
 

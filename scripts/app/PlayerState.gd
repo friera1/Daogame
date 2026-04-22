@@ -111,6 +111,9 @@ func get_currencies() -> Dictionary:
 func get_cultivation() -> Dictionary:
 	return profile.get("cultivation_progress", {})
 
+func get_current_stage_id() -> String:
+	return str(get_cultivation().get("current_stage_id", "mortal_early"))
+
 func get_equipment() -> Dictionary:
 	return profile.get("equipment", {})
 
@@ -285,15 +288,7 @@ func claim_daily_login() -> Dictionary:
 		add_stamina(reward_stamina)
 	save_profile()
 	emit_signal("attendance_changed")
-	return {
-		"claimed": true,
-		"streak": streak,
-		"gold": reward_gold,
-		"bound_spirit_stone": reward_bound,
-		"jade": reward_jade,
-		"stamina": reward_stamina,
-		"text": "Вход дня %d получен" % streak
-	}
+	return {"claimed": true, "streak": streak, "gold": reward_gold, "bound_spirit_stone": reward_bound, "jade": reward_jade, "stamina": reward_stamina, "text": "Вход дня %d получен" % streak}
 
 func get_banner_pity(banner_id: String) -> int:
 	return int(get_summon_progress().get(banner_id, 0))
@@ -376,10 +371,7 @@ func equip_item(slot_id: String, item_id: String) -> void:
 
 func get_equipment_enhance_cost(slot_id: String) -> Dictionary:
 	var next_level := get_equipment_enhance_level(slot_id) + 1
-	return {
-		"gold": 300 + next_level * 180,
-		"bound_spirit_stone": 12 + next_level * 6
-	}
+	return {"gold": 300 + next_level * 180, "bound_spirit_stone": 12 + next_level * 6}
 
 func enhance_equipment(slot_id: String) -> Dictionary:
 	var equipped_item := str(get_equipment().get(slot_id, "none"))
@@ -397,20 +389,11 @@ func enhance_equipment(slot_id: String) -> Dictionary:
 	var enhancement := get_equipment_enhancement()
 	enhancement[slot_id] = current_level + 1
 	profile["equipment_enhancement"] = enhancement
-	var power_gain := 18 + (current_level + 1) * 6
-	profile["combat_power"] = get_power() + power_gain
+	profile["combat_power"] = get_power() + 18 + (current_level + 1) * 6
 	save_profile()
 	emit_signal("equipment_changed")
 	emit_signal("player_loaded")
-	return {
-		"ok": true,
-		"slot_id": slot_id,
-		"item_id": equipped_item,
-		"new_level": current_level + 1,
-		"power_gain": power_gain,
-		"cost": cost,
-		"text": "%s усилен до +%d" % [slot_id, current_level + 1]
-	}
+	return {"ok": true, "slot_id": slot_id, "item_id": equipped_item, "new_level": current_level + 1, "power_gain": 18 + (current_level + 1) * 6, "cost": cost, "text": "%s усилен до +%d" % [slot_id, current_level + 1]}
 
 func refine_body() -> void:
 	var cult := get_cultivation()
@@ -434,11 +417,7 @@ func refine_dao_heart() -> void:
 	emit_signal("cultivation_changed")
 
 func _stage_index(stage_id: String) -> int:
-	var stages := ConfigRepository.stages.get("stages", [])
-	for i in range(stages.size()):
-		if str(stages[i].get("id", "")) == stage_id:
-			return i
-	return 0
+	return ConfigRepository.get_stage_index(stage_id)
 
 func _stage_by_index(index: int) -> Dictionary:
 	var stages := ConfigRepository.stages.get("stages", [])
@@ -449,8 +428,7 @@ func _stage_by_index(index: int) -> Dictionary:
 func add_qi(amount: int) -> void:
 	var cult := get_cultivation()
 	cult["qi_exp"] = int(cult.get("qi_exp", 0)) + amount
-	var required := int(cult.get("qi_exp_required", 1))
-	cult["breakthrough_ready"] = int(cult.get("qi_exp", 0)) >= required
+	cult["breakthrough_ready"] = int(cult.get("qi_exp", 0)) >= int(cult.get("qi_exp_required", 1))
 	profile["cultivation_progress"] = cult
 	save_profile()
 	emit_signal("cultivation_changed")
@@ -506,64 +484,128 @@ func apply_idle_rewards() -> Dictionary:
 func get_inventory() -> Array:
 	return profile.get("inventory", [])
 
+func get_inventory_item_quantity(item_id: String) -> int:
+	var total := 0
+	for entry in get_inventory():
+		if str(entry.get("item_id", "")) == item_id:
+			total += int(entry.get("quantity", 0))
+	return total
+
+func _item_stack_limit(item_id: String) -> int:
+	var item_def := ConfigRepository.get_item_def(item_id)
+	return int(item_def.get("stack_limit", 999))
+
+func _can_access_item_def(item_def: Dictionary) -> bool:
+	if item_def.is_empty():
+		return false
+	if not ConfigRepository.is_stage_requirement_met(str(item_def.get("qi_stage_required", "")), get_current_stage_id()):
+		return false
+	return get_level() >= int(item_def.get("player_level_required", 1))
+
+func can_access_item(item_id: String) -> bool:
+	return _can_access_item_def(ConfigRepository.get_item_def(item_id))
+
 func add_inventory_item(item_id: String, quantity: int = 1, rarity: String = "common") -> void:
 	var inventory := get_inventory()
+	var remaining := quantity
+	var stack_limit := max(_item_stack_limit(item_id), 1)
 	for i in range(inventory.size()):
-		if str(inventory[i].get("item_id", "")) == item_id and not bool(inventory[i].get("locked", false)):
-			inventory[i]["quantity"] = int(inventory[i].get("quantity", 0)) + quantity
-			profile["inventory"] = inventory
-			save_profile()
-			emit_signal("inventory_changed")
-			return
-	inventory.append({
-		"item_uid": "itm_%s_%d" % [item_id, Time.get_unix_time_from_system()],
-		"item_id": item_id,
-		"quantity": quantity,
-		"rarity": rarity,
-		"locked": false
-	})
+		if remaining <= 0:
+			break
+		if str(inventory[i].get("item_id", "")) != item_id or bool(inventory[i].get("locked", false)):
+			continue
+		var current_qty := int(inventory[i].get("quantity", 0))
+		if current_qty >= stack_limit:
+			continue
+		var addable := min(stack_limit - current_qty, remaining)
+		inventory[i]["quantity"] = current_qty + addable
+		remaining -= addable
+	while remaining > 0:
+		var stack_qty := min(stack_limit, remaining)
+		inventory.append({"item_uid": "itm_%s_%d" % [item_id, Time.get_unix_time_from_system() + inventory.size()], "item_id": item_id, "quantity": stack_qty, "rarity": rarity, "locked": false})
+		remaining -= stack_qty
 	profile["inventory"] = inventory
 	save_profile()
 	emit_signal("inventory_changed")
 
 func consume_inventory_item(item_id: String, quantity: int = 1) -> bool:
+	if get_inventory_item_quantity(item_id) < quantity:
+		return false
 	var inventory := get_inventory()
-	for i in range(inventory.size()):
+	var remaining := quantity
+	for i in range(inventory.size() - 1, -1, -1):
 		if str(inventory[i].get("item_id", "")) != item_id:
 			continue
 		var current := int(inventory[i].get("quantity", 0))
-		if current < quantity:
-			return false
-		inventory[i]["quantity"] = current - quantity
+		var consume := min(current, remaining)
+		inventory[i]["quantity"] = current - consume
+		remaining -= consume
 		if int(inventory[i].get("quantity", 0)) <= 0:
 			inventory.remove_at(i)
-		profile["inventory"] = inventory
-		save_profile()
-		emit_signal("inventory_changed")
-		return true
-	return false
+		if remaining <= 0:
+			break
+	profile["inventory"] = inventory
+	save_profile()
+	emit_signal("inventory_changed")
+	return true
+
+func can_use_inventory_item(item_id: String) -> bool:
+	var item_def := ConfigRepository.get_item_def(item_id)
+	return bool(item_def.get("usable", false)) and _can_access_item_def(item_def)
+
+func craft_recipe(recipe_id: String) -> Dictionary:
+	var recipe := ConfigRepository.get_recipe_def(recipe_id)
+	if recipe.is_empty():
+		return {"ok": false, "text": "Рецепт не найден"}
+	if not ConfigRepository.is_stage_requirement_met(str(recipe.get("qi_stage_required", "")), get_current_stage_id()):
+		return {"ok": false, "text": "Недостаточная стадия Ци для рецепта"}
+	if get_level() < int(recipe.get("player_level_required", 1)):
+		return {"ok": false, "text": "Недостаточный уровень для рецепта"}
+	for ingredient in recipe.get("ingredients", []):
+		if get_inventory_item_quantity(str(ingredient.get("item_id", ""))) < int(ingredient.get("quantity", 1)):
+			return {"ok": false, "text": "Не хватает материалов для крафта"}
+	var gold_cost := int(recipe.get("gold_cost", 0))
+	var bound_cost := int(recipe.get("bound_spirit_stone_cost", 0))
+	if int(get_currencies().get("gold", 0)) < gold_cost:
+		return {"ok": false, "text": "Недостаточно золота"}
+	if int(get_currencies().get("bound_spirit_stone", 0)) < bound_cost:
+		return {"ok": false, "text": "Недостаточно связанных духовных камней"}
+	for ingredient in recipe.get("ingredients", []):
+		consume_inventory_item(str(ingredient.get("item_id", "")), int(ingredient.get("quantity", 1)))
+	if gold_cost > 0:
+		spend_currency("gold", gold_cost)
+	if bound_cost > 0:
+		spend_currency("bound_spirit_stone", bound_cost)
+	var result := recipe.get("result", {})
+	add_inventory_item(str(result.get("item_id", "")), int(result.get("quantity", 1)), str(result.get("rarity", "common")))
+	return {"ok": true, "recipe_id": recipe_id, "result": result, "text": "%s создан" % ConfigRepository.get_item_name(str(result.get("item_id", "")))}
 
 func use_inventory_item(item_id: String) -> String:
 	var item_def := ConfigRepository.get_item_def(item_id)
-	var item_type := str(item_def.get("type", ""))
-	if item_type == "consumable":
-		if not consume_inventory_item(item_id, 1):
-			return "Предмет закончился"
-		var qi_gain := int(item_def.get("qi_gain", 0))
-		var stamina_gain := int(item_def.get("stamina_gain", 0))
-		if qi_gain > 0:
+	if item_def.is_empty():
+		return "Предмет не найден"
+	if not _can_access_item_def(item_def):
+		return "Недостаточная стадия Ци или уровень для использования"
+	if not bool(item_def.get("usable", false)):
+		return "Этот предмет пока нельзя использовать напрямую"
+	if not consume_inventory_item(item_id, 1):
+		return "Предмет закончился"
+	match str(item_def.get("use_type", "")):
+		"grant_qi":
+			var qi_gain := int(item_def.get("qi_gain", 0))
 			add_qi(qi_gain * 10000)
 			return "%s использован, получено %d Ци" % [ConfigRepository.get_item_name(item_id), qi_gain]
-		if stamina_gain > 0:
+		"restore_stamina":
+			var stamina_gain := int(item_def.get("stamina_gain", 0))
 			add_stamina(stamina_gain)
 			return "%s использован, восстановлено %d энергии" % [ConfigRepository.get_item_name(item_id), stamina_gain]
-		return "%s использован" % ConfigRepository.get_item_name(item_id)
-	if item_type == "material" and item_id == "breakthrough_stone":
-		if not consume_inventory_item(item_id, 1):
-			return "Камень прорыва отсутствует"
-		add_currency("bound_spirit_stone", 50)
-		return "Камень прорыва преобразован в 50 связанных духовных камней"
-	return "Этот предмет пока нельзя использовать напрямую"
+		"refine_material":
+			var currency_id := str(item_def.get("currency_id", "bound_spirit_stone"))
+			var amount := int(item_def.get("currency_amount", 0))
+			add_currency(currency_id, amount)
+			return "%s преобразован в %d %s" % [ConfigRepository.get_item_name(item_id), amount, currency_id]
+		_:
+			return "%s использован" % ConfigRepository.get_item_name(item_id)
 
 func get_skills() -> Array:
 	return profile.get("skills", [])
@@ -592,13 +634,7 @@ func add_pet(pet_id: String) -> bool:
 	if has_pet(pet_id):
 		return false
 	var pets := get_pets()
-	pets.append({
-		"pet_id": pet_id,
-		"level": 1,
-		"stars": 1,
-		"bond_level": 1,
-		"equipped": false
-	})
+	pets.append({"pet_id": pet_id, "level": 1, "stars": 1, "bond_level": 1, "equipped": false})
 	profile["pets"] = pets
 	save_profile()
 	emit_signal("pets_changed")
@@ -654,15 +690,7 @@ func grant_summon_reward(reward: Dictionary) -> Dictionary:
 	var reward_type := str(reward.get("type", "item"))
 	var reward_id := str(reward.get("id", ""))
 	var rarity := _reward_rarity(reward_type, reward_id)
-	var result := {
-		"type": reward_type,
-		"id": reward_id,
-		"rarity": rarity,
-		"is_new": false,
-		"duplicate": false,
-		"status": "item",
-		"text": ""
-	}
+	var result := {"type": reward_type, "id": reward_id, "rarity": rarity, "is_new": false, "duplicate": false, "status": "item", "text": ""}
 	if reward_type == "pet":
 		if add_pet(reward_id):
 			result["is_new"] = true
@@ -673,13 +701,6 @@ func grant_summon_reward(reward: Dictionary) -> Dictionary:
 		result["duplicate"] = true
 		result["status"] = "duplicate_pet"
 		result["text"] = "%s уже был у тебя, получен осколок (%d/3)" % [reward_id, shard_total]
-		return result
-	if reward_id == "breakthrough_stone":
-		rarity = "epic"
-		result["rarity"] = rarity
-		add_inventory_item(reward_id, 1, rarity)
-		result["status"] = "epic_item"
-		result["text"] = "%s x1" % reward_id
 		return result
 	if reward_id == "spirit_stone":
 		add_currency("spirit_stone", 10)

@@ -28,6 +28,7 @@ ConfigRepository="*res://scripts/config/ConfigRepository.gd"
 UITheme="*res://scripts/ui/UITheme.gd"
 SaveService="*res://scripts/infrastructure/SaveService.gd"
 IdleRewardService="*res://scripts/infrastructure/IdleRewardService.gd"
+OnlineSyncService="*res://scripts/infrastructure/OnlineSyncService.gd"
 
 [input]
 

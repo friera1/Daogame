@@ -24,3 +24,19 @@ func has_claimed_daily_mission(mission_id: String) -> bool:
 
 func mark_daily_mission_claimed(mission_id: String) -> void:
 	claimed_daily_missions[mission_id] = true
+
+func has_claimed_battle_rewards() -> bool:
+	return bool(last_battle_result.get("claimed", false))
+
+func claim_last_battle_rewards() -> Dictionary:
+	if has_claimed_battle_rewards():
+		return last_battle_result.get("rewards", {})
+	var rewards := last_battle_result.get("rewards", {})
+	PlayerState.add_currency("gold", int(rewards.get("gold", 0)))
+	PlayerState.add_currency("bound_spirit_stone", int(rewards.get("qi_essence", 0)))
+	PlayerState.add_currency("spirit_stone", int(rewards.get("spirit_stone", 0)))
+	var items := rewards.get("items", [])
+	for item in items:
+		PlayerState.add_inventory_item(str(item.get("id", "")), int(item.get("quantity", 1)), str(item.get("rarity", "rare")))
+	last_battle_result["claimed"] = true
+	return rewards

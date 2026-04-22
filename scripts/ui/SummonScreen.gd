@@ -26,8 +26,17 @@ func _ready() -> void:
 	if banners.size() > 0:
 		current_banner = banners[0]
 		banner_label.text = str(current_banner.get("title", "Призыв"))
+		pity_counter = PlayerState.get_banner_pity(_banner_id())
 		_refresh_info("Готов к призыву")
 	_clear_results_placeholder()
+	PlayerState.summon_progress_changed.connect(_on_summon_progress_changed)
+
+func _banner_id() -> String:
+	return str(current_banner.get("id", "default_banner"))
+
+func _on_summon_progress_changed() -> void:
+	pity_counter = PlayerState.get_banner_pity(_banner_id())
+	_refresh_info("Прогресс призыва синхронизирован")
 
 func _apply_visual_polish() -> void:
 	header_title.add_theme_color_override("font_color", UITheme.COLOR_GOLD)
@@ -135,7 +144,7 @@ func _result_icon(entry: Dictionary) -> Texture2D:
 
 func _queue_summon_action(results: Array, pull_count: int) -> void:
 	OnlineSyncService.queue_summon_pull({
-		"banner_id": str(current_banner.get("id", "default_banner")),
+		"banner_id": _banner_id(),
 		"banner_title": str(current_banner.get("title", "Призыв")),
 		"pull_count": pull_count,
 		"cost_per_pull": int(current_banner.get("cost_per_pull", 10)),
@@ -143,6 +152,9 @@ func _queue_summon_action(results: Array, pull_count: int) -> void:
 		"pity_after": pity_counter,
 		"results": results
 	})
+
+func _persist_pity() -> void:
+	PlayerState.set_banner_pity(_banner_id(), pity_counter)
 
 func _on_pull_once_pressed() -> void:
 	var cost := int(current_banner.get("cost_per_pull", 10))
@@ -152,6 +164,7 @@ func _on_pull_once_pressed() -> void:
 		return
 	pity_counter += 1
 	var reward := _resolve_reward()
+	_persist_pity()
 	var result := PlayerState.grant_summon_reward(reward)
 	_show_results([result])
 	_queue_summon_action([result], 1)
@@ -185,6 +198,7 @@ func _on_pull_ten_pressed() -> void:
 		pity_counter += 1
 		var reward := _resolve_reward()
 		results.append(PlayerState.grant_summon_reward(reward))
+	_persist_pity()
 	if results.is_empty():
 		_refresh_info("Недостаточно валюты для x10 призыва")
 		return

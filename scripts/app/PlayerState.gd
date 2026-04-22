@@ -10,6 +10,7 @@ signal tutorial_changed
 signal inventory_changed
 signal story_progress_changed
 signal summon_progress_changed
+signal attendance_changed
 
 var profile: Dictionary = {}
 
@@ -46,9 +47,15 @@ func _ensure_profile_defaults() -> void:
 		}
 	if not profile.has("summon_progress"):
 		profile["summon_progress"] = {}
+	if not profile.has("attendance_progress"):
+		profile["attendance_progress"] = {"last_claim_key": "", "streak": 0, "total_days": 0}
 
 func save_profile() -> void:
 	SaveService.save_profile(profile)
+
+func _today_key_utc() -> String:
+	var now := Time.get_datetime_dict_from_system(true)
+	return "%04d-%02d-%02d" % [int(now.get("year", 1970)), int(now.get("month", 1)), int(now.get("day", 1))]
 
 func get_name() -> String:
 	return str(profile.get("name", "Безымянный культиватор"))
@@ -87,6 +94,41 @@ func get_story_progress() -> Dictionary:
 
 func get_summon_progress() -> Dictionary:
 	return profile.get("summon_progress", {})
+
+func get_attendance_progress() -> Dictionary:
+	return profile.get("attendance_progress", {"last_claim_key": "", "streak": 0, "total_days": 0})
+
+func can_claim_daily_login() -> bool:
+	return str(get_attendance_progress().get("last_claim_key", "")) != _today_key_utc()
+
+func claim_daily_login() -> Dictionary:
+	var attendance := get_attendance_progress()
+	if str(attendance.get("last_claim_key", "")) == _today_key_utc():
+		return {"claimed": false, "text": "Награда входа уже получена сегодня"}
+	var streak := int(attendance.get("streak", 0)) + 1
+	if streak > 7:
+		streak = 1
+	var reward_gold := 200 + streak * 50
+	var reward_bound := 20 + streak * 5
+	var reward_jade := 10 if streak == 7 else 0
+	attendance["last_claim_key"] = _today_key_utc()
+	attendance["streak"] = streak
+	attendance["total_days"] = int(attendance.get("total_days", 0)) + 1
+	profile["attendance_progress"] = attendance
+	add_currency("gold", reward_gold)
+	add_currency("bound_spirit_stone", reward_bound)
+	if reward_jade > 0:
+		add_currency("jade", reward_jade)
+	save_profile()
+	emit_signal("attendance_changed")
+	return {
+		"claimed": true,
+		"streak": streak,
+		"gold": reward_gold,
+		"bound_spirit_stone": reward_bound,
+		"jade": reward_jade,
+		"text": "Вход дня %d получен" % streak
+	}
 
 func get_banner_pity(banner_id: String) -> int:
 	return int(get_summon_progress().get(banner_id, 0))

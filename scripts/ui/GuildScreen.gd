@@ -56,11 +56,7 @@ func _add_contribution_ranking() -> void:
 	for member in guild.get("member_list", []):
 		var member_power := int(member.get("power", 0))
 		var contribution := int(floor(float(member_power) / 5000.0)) + int(boss.get("progress", 0))
-		ranking.append({
-			"name": str(member.get("name", "Ученик")),
-			"role": str(member.get("role", "Участник")),
-			"contribution": contribution
-		})
+		ranking.append({"name": str(member.get("name", "Ученик")), "role": str(member.get("role", "Участник")), "contribution": contribution})
 	ranking.sort_custom(func(a, b): return int(a.get("contribution", 0)) > int(b.get("contribution", 0)))
 	var limit := min(3, ranking.size())
 	for i in range(limit):
@@ -83,6 +79,36 @@ func _add_contribution_ranking() -> void:
 		row.add_child(label)
 		member_list.add_child(card)
 
+func _add_contribution_tiers() -> void:
+	for tier in GameSession.get_guild_boss_contribution_tiers():
+		var reached := bool(tier.get("reached", false))
+		var claimed := bool(tier.get("claimed", false))
+		var reward := tier.get("reward", {})
+		var card := PanelContainer.new()
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		UITheme.apply_card(card, UITheme.COLOR_SUCCESS if claimed else UITheme.COLOR_GOLD if reached else UITheme.COLOR_TEXT_SECONDARY)
+		var row := HBoxContainer.new()
+		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_theme_constant_override("separation", 12)
+		card.add_child(row)
+		var icon := TextureRect.new()
+		icon.custom_minimum_size = Vector2(44, 44)
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.texture = IconLoader.get_currency_icon("bound_spirit_stone")
+		var label := Label.new()
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		label.text = "[TIER %s] порог %d · %d зол. · %d нефрита" % [str(tier.get("id", "bronze")).to_upper(), int(tier.get("target", 0)), int(reward.get("gold", 0)), int(reward.get("jade", 0))]
+		var button := Button.new()
+		button.text = "Получено" if claimed else "Забрать"
+		button.icon = IconLoader.get_currency_icon("jade")
+		UITheme.apply_accent_button(button, true)
+		button.disabled = claimed or not reached
+		button.pressed.connect(_claim_tier.bind(str(tier.get("id", "bronze"))))
+		row.add_child(icon)
+		row.add_child(label)
+		row.add_child(button)
+		member_list.add_child(card)
+
 func _refresh() -> void:
 	for child in member_list.get_children():
 		child.queue_free()
@@ -95,9 +121,10 @@ func _refresh() -> void:
 	title_label.text = str(guild.get("name", "Орден"))
 	title_label.add_theme_color_override("font_color", UITheme.COLOR_GOLD)
 	title_label.add_theme_font_size_override("font_size", 28)
-	summary_label.text = "[b]Глава[/b]: %s\n[b]Уровень[/b]: %s\n[b]Сила ордена[/b]: %s\n[b]Состав[/b]: %s / %s [%s]\n[b]Пожертвования сегодня[/b]: %s\n[b]Прогресс босса ордена[/b]: %s%% [%s]\n[b]Weekly PvE[/b]: %s · попытки %d/%d · цена %d энергии\n[b]Рейтинг вклада[/b]: очки растут от силы участников и прогресса босса\n\n[i]%s[/i]" % [str(guild.get("leader", "-")), str(guild.get("level", 1)), str(guild.get("power", 0)), str(member_count), str(max_members), "ПОЛОН" if member_count >= max_members else "НАБОР", str(guild.get("daily_donations", 0)), str(max(boss_progress, int(live_boss.get("progress", 0)))), "ГОТОВ" if int(live_boss.get("remaining_runs", 0)) > 0 else "ЛИМИТ", str(live_boss.get("name", "Дракон")), int(live_boss.get("remaining_runs", 0)), int(live_boss.get("max_runs", 0)), int(live_boss.get("stamina_cost", 0)), str(guild.get("announcement", ""))]
+	summary_label.text = "[b]Глава[/b]: %s\n[b]Уровень[/b]: %s\n[b]Сила ордена[/b]: %s\n[b]Состав[/b]: %s / %s [%s]\n[b]Пожертвования сегодня[/b]: %s\n[b]Прогресс босса ордена[/b]: %s%% [%s]\n[b]Weekly PvE[/b]: %s · попытки %d/%d · цена %d энергии\n[b]Вклад игрока[/b]: %d\n[b]Рейтинг вклада[/b]: очки растут от силы участников и прогресса босса\n\n[i]%s[/i]" % [str(guild.get("leader", "-")), str(guild.get("level", 1)), str(guild.get("power", 0)), str(member_count), str(max_members), "ПОЛОН" if member_count >= max_members else "НАБОР", str(guild.get("daily_donations", 0)), str(max(boss_progress, int(live_boss.get("progress", 0)))), "ГОТОВ" if int(live_boss.get("remaining_runs", 0)) > 0 else "ЛИМИТ", str(live_boss.get("name", "Дракон")), int(live_boss.get("remaining_runs", 0)), int(live_boss.get("max_runs", 0)), int(live_boss.get("stamina_cost", 0)), int(live_boss.get("contribution_score", 0)), str(guild.get("announcement", ""))]
 	_add_boss_card()
 	_add_contribution_ranking()
+	_add_contribution_tiers()
 	for member in guild.get("member_list", []):
 		var power := int(member.get("power", 0))
 		var badge := "[ЭЛИТА]" if power >= 250000 else "[АКТИВ]"
@@ -133,6 +160,13 @@ func _enter_boss() -> void:
 	GameSession.set_battle_context({"source": "guild_boss", "chapter_index": 5 + int(boss.get("cycle", 0)), "enemy_name": str(boss.get("name", "Дракон небесной меди")), "boss_id": str(boss.get("boss_id", "guild_boss_0"))})
 	OnlineSyncService.queue_action("guild_boss_enter", {"boss_id": str(boss.get("boss_id", "guild_boss_0"))})
 	SceneRouter.goto_scene("res://scenes/battle/BattleScreen.tscn")
+
+func _claim_tier(tier_id: String) -> void:
+	var result := GameSession.claim_guild_boss_contribution_tier(tier_id)
+	summary_label.text = str(result.get("text", "Награда tier недоступна"))
+	if bool(result.get("ok", false)):
+		OnlineSyncService.queue_action("guild_boss_tier_claim", result)
+	_refresh()
 
 func _donate(member_name: String) -> void:
 	if not PlayerState.spend_currency("gold", 500):

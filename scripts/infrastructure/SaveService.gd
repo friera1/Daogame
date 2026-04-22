@@ -8,10 +8,7 @@ func save_profile(profile: Dictionary) -> bool:
 		push_error("Failed to open save file for writing")
 		return false
 	file.store_string(JSON.stringify(profile, "\t"))
-	if Engine.has_singleton("OnlineSyncService"):
-		OnlineSyncService.queue_profile_snapshot(profile, "save_profile")
-	elif "OnlineSyncService" in ProjectSettings.get_setting("autoload", {}):
-		OnlineSyncService.queue_profile_snapshot(profile, "save_profile")
+	OnlineSyncService.queue_profile_snapshot(profile, "save_profile")
 	return true
 
 func load_profile() -> Dictionary:

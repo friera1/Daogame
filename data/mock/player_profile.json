@@ -41,7 +41,7 @@
       "item_uid": "itm_1002_def",
       "item_id": "qi_pill_small",
       "quantity": 12,
-      "rarity": "rare",
+      "rarity": "common",
       "locked": false
     },
     {
@@ -69,6 +69,69 @@
       "item_uid": "itm_1006_pqr",
       "item_id": "jade_ring_01",
       "quantity": 1,
+      "rarity": "rare",
+      "locked": false
+    },
+    {
+      "item_uid": "itm_1007_mat",
+      "item_id": "medicinal_herb",
+      "quantity": 10,
+      "rarity": "common",
+      "locked": false
+    },
+    {
+      "item_uid": "itm_1008_mat",
+      "item_id": "essence_dust",
+      "quantity": 8,
+      "rarity": "common",
+      "locked": false
+    },
+    {
+      "item_uid": "itm_1009_mat",
+      "item_id": "wind_feather",
+      "quantity": 4,
+      "rarity": "uncommon",
+      "locked": false
+    },
+    {
+      "item_uid": "itm_1010_mat",
+      "item_id": "spirit_herb_bundle",
+      "quantity": 3,
+      "rarity": "uncommon",
+      "locked": false
+    },
+    {
+      "item_uid": "itm_1011_mat",
+      "item_id": "spirit_ore",
+      "quantity": 4,
+      "rarity": "rare",
+      "locked": false
+    },
+    {
+      "item_uid": "itm_1012_mat",
+      "item_id": "cloud_silk",
+      "quantity": 4,
+      "rarity": "rare",
+      "locked": false
+    },
+    {
+      "item_uid": "itm_1013_mat",
+      "item_id": "lightning_bark",
+      "quantity": 3,
+      "rarity": "epic",
+      "locked": false
+    },
+    {
+      "item_uid": "itm_1014_mat",
+      "item_id": "ring_core_fragment",
+      "quantity": 3,
+      "rarity": "epic",
+      "locked": false
+    },
+    {
+      "item_uid": "itm_1015_mat",
+      "item_id": "forge_seal",
+      "quantity": 5,
       "rarity": "rare",
       "locked": false
     }

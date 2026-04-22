@@ -69,7 +69,14 @@ func _build_item_row(entry: Dictionary) -> Control:
 
 func _on_item_action(item_id: String, usable: bool) -> void:
 	if usable:
-		detail_label.text = "[b]%s[/b]\n\n%s" % [ConfigRepository.get_item_name(item_id), PlayerState.use_inventory_item(item_id)]
+		var result_text := PlayerState.use_inventory_item(item_id)
+		detail_label.text = "[b]%s[/b]\n\n%s" % [ConfigRepository.get_item_name(item_id), result_text]
+		if not result_text.contains("пока нельзя") and not result_text.contains("отсутствует") and not result_text.contains("закончился"):
+			OnlineSyncService.queue_item_use({
+				"item_id": item_id,
+				"item_name": ConfigRepository.get_item_name(item_id),
+				"result": result_text
+			})
 		return
 	var item_def := ConfigRepository.get_item_def(item_id)
 	detail_label.text = "[b]%s[/b]\n\nТип: %s\nРедкость: %s\nСтатус: пока используется только в системах прогрессии." % [

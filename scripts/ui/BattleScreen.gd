@@ -113,10 +113,13 @@ func _apply_context_scaling() -> void:
 			stage_bonus = i
 			break
 	var mult := _battle_multiplier()
+	var support_bonus := int(battle_context.get("support_bonus", 0))
 	enemy_hp_value = int(floor(float(enemy_hp_value + (chapter_index - 1) * 220 + stage_bonus * 60) * mult))
-	player_hp_value += stage_bonus * 40
+	player_hp_value += stage_bonus * 40 + support_bonus
 	player_hp_max = player_hp_value
 	_append_log("Контекст боя: глава %d, стадия %s" % [chapter_index, ConfigRepository.get_stage_name(stage_id)])
+	if support_bonus > 0:
+		_append_log("Support unit усиливает тебя на +%d HP" % support_bonus)
 	var source := str(battle_context.get("source", ""))
 	if source == "event_dungeon":
 		_append_log("Лимитированное подземелье активно: усиленные трофеи и дневные попытки")

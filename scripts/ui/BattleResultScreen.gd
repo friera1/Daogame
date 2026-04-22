@@ -30,7 +30,13 @@ func _refresh_rewards_text() -> void:
 func _claim_if_needed() -> void:
 	if GameSession.has_claimed_battle_rewards():
 		return
-	GameSession.claim_last_battle_rewards()
+	var result := GameSession.last_battle_result
+	var rewards := GameSession.claim_last_battle_rewards()
+	OnlineSyncService.queue_battle_complete({
+		"victory": bool(result.get("victory", false)),
+		"context": result.get("context", {}),
+		"rewards": rewards
+	})
 	_refresh_rewards_text()
 
 func _on_continue_pressed() -> void:

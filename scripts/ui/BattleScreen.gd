@@ -47,6 +47,18 @@ func _ready() -> void:
 		_append_log("Потрачено энергии: %d" % int(guild_start.get("stamina_cost", 0)))
 		_append_log("Осталось попыток босса: %d" % int(guild_start.get("remaining_runs", 0)))
 		_append_log("Прогресс босса ордена: %d%%" % int(guild_start.get("progress", 0)))
+	elif source == "arena":
+		var arena_start := GameSession.begin_arena_run(int(battle_context.get("opponent_index", 0)))
+		if not bool(arena_start.get("ok", false)):
+			_append_log(str(arena_start.get("text", "Арена недоступна")))
+			_disable_skills()
+			await get_tree().create_timer(1.2).timeout
+			SceneRouter.goto_scene("res://scenes/events/DailyMissionsScreen.tscn")
+			return
+		var opponent := arena_start.get("opponent", {})
+		enemy_name.text = str(opponent.get("name", enemy_name.text))
+		_append_log("Арена: выбран соперник ранга #%d" % int(opponent.get("rank", 999)))
+		_append_log("Осталось попыток арены: %d" % int(arena_start.get("remaining_runs", 0)))
 	else:
 		var stamina_cost := _battle_stamina_cost()
 		if not PlayerState.spend_stamina(stamina_cost):
@@ -74,6 +86,8 @@ func _battle_multiplier() -> float:
 		return 1.55
 	if source == "guild_boss":
 		return 2.1
+	if source == "arena":
+		return 1.25
 	match _battle_node_type():
 		"elite_battle":
 			return 1.35
@@ -108,6 +122,8 @@ func _apply_context_scaling() -> void:
 		_append_log("Лимитированное подземелье активно: усиленные трофеи и дневные попытки")
 	elif source == "guild_boss":
 		_append_log("Босс ордена активен: недельный лимит заходов и усиленные награды")
+	elif source == "arena":
+		_append_log("Арена активна: асинхронный PvP бой за сезонный рейтинг")
 	elif _battle_node_type() == "elite_battle":
 		_append_log("Элитный враг усиливает награды и сложность")
 	elif _battle_node_type() == "boss_battle":
@@ -141,12 +157,9 @@ func _build_rewards(victory: bool) -> Dictionary:
 		return GameSession.get_event_dungeon_rewards(victory)
 	if source == "guild_boss":
 		return GameSession.get_guild_boss_rewards(victory)
-	return GameSession._build_story_rewards(int(battle_context.get("chapter_index", 1)), _battle_node_type(), victory) if source == "story" else {
-		"gold": 320,
-		"qi_essence": 18,
-		"spirit_stone": 1,
-		"items": [{"id": "qi_pill_small", "quantity": 1, "rarity": "rare"}]
-	}
+	if source == "arena":
+		return GameSession.get_arena_rewards(victory)
+	return GameSession._build_story_rewards(int(battle_context.get("chapter_index", 1)), _battle_node_type(), victory) if source == "story" else {"gold": 320, "qi_essence": 18, "spirit_stone": 1, "items": [{"id": "qi_pill_small", "quantity": 1, "rarity": "rare"}]}
 
 func _story_battle_stars(victory: bool) -> int:
 	if not victory:
@@ -165,13 +178,7 @@ func _finalize_battle(victory: bool) -> void:
 	var stars := _story_battle_stars(victory) if str(battle_context.get("source", "")) == "story" else 0
 	if stars > 0:
 		_append_log("Получено звёзд: %d" % stars)
-	GameSession.last_battle_result = {
-		"victory": victory,
-		"claimed": false,
-		"stars": stars,
-		"context": battle_context,
-		"rewards": _build_rewards(victory)
-	}
+	GameSession.last_battle_result = {"victory": victory, "claimed": false, "stars": stars, "context": battle_context, "rewards": _build_rewards(victory)}
 	await get_tree().create_timer(1.0).timeout
 	SceneRouter.goto_scene("res://scenes/battle/BattleResultScreen.tscn")
 

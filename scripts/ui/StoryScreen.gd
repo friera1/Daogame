@@ -65,7 +65,7 @@ func _show_chapter(chapter_id: String) -> void:
 			action.text = "Получено" if claimed else "Открыть"
 			UITheme.apply_accent_button(action, node_type == "reward")
 			action.disabled = claimed
-			action.pressed.connect(_open_node.bind(node))
+			action.pressed.connect(_open_node.bind(node, chapter_id))
 			row.add_child(icon)
 			row.add_child(label)
 			row.add_child(action)
@@ -88,9 +88,23 @@ func _node_icon(node_type: String) -> Texture2D:
 		_:
 			return IconLoader.get_icon("story_marker")
 
-func _open_node(node: Dictionary) -> void:
+func _chapter_index(chapter_id: String) -> int:
+	var chapters := ConfigRepository.story.get("chapters", [])
+	for i in range(chapters.size()):
+		if str(chapters[i].get("id", "")) == chapter_id:
+			return i + 1
+	return 1
+
+func _open_node(node: Dictionary, chapter_id: String) -> void:
 	var node_type := str(node.get("type", "story"))
 	if node_type == "battle":
+		GameSession.set_battle_context({
+			"source": "story",
+			"chapter_id": chapter_id,
+			"chapter_index": _chapter_index(chapter_id),
+			"node_id": str(node.get("id", "")),
+			"enemy_name": str(node.get("title", "Страж главы"))
+		})
 		SceneRouter.goto_scene("res://scenes/battle/BattleScreen.tscn")
 		return
 	if node_type == "reward":

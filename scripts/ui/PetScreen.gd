@@ -80,7 +80,14 @@ func _show_pet(pet_id: String) -> void:
 	detail_label.text = "Питомец не найден"
 
 func _merge_pet(pet_id: String) -> void:
+	var before_shards := PlayerState.get_pet_shards_for(pet_id)
 	if PlayerState.evolve_pet_with_shards(pet_id):
+		OnlineSyncService.queue_pet_merge({
+			"pet_id": pet_id,
+			"pet_name": _get_pet_name(pet_id),
+			"shards_before": before_shards,
+			"shards_after": PlayerState.get_pet_shards_for(pet_id)
+		})
 		detail_label.text = "[b]Слияние успешно[/b]\n\nПитомец %s получил новую звезду." % _get_pet_name(pet_id)
 		_refresh()
 		return

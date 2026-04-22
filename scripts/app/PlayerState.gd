@@ -12,6 +12,7 @@ signal story_progress_changed
 signal summon_progress_changed
 signal attendance_changed
 signal stamina_changed
+signal mailbox_changed
 
 var profile: Dictionary = {}
 
@@ -52,6 +53,8 @@ func _ensure_profile_defaults() -> void:
 		profile["attendance_progress"] = {"last_claim_key": "", "streak": 0, "total_days": 0}
 	if not profile.has("stamina_progress"):
 		profile["stamina_progress"] = {"current": 30, "max": 30, "last_regen_time": Time.get_unix_time_from_system(), "regen_interval_sec": 300}
+	if not profile.has("mailbox_progress"):
+		profile["mailbox_progress"] = {"claimed_messages": {}}
 
 func save_profile() -> void:
 	SaveService.save_profile(profile)
@@ -103,6 +106,21 @@ func get_attendance_progress() -> Dictionary:
 
 func get_stamina_progress() -> Dictionary:
 	return profile.get("stamina_progress", {"current": 30, "max": 30, "last_regen_time": Time.get_unix_time_from_system(), "regen_interval_sec": 300})
+
+func get_mailbox_progress() -> Dictionary:
+	return profile.get("mailbox_progress", {"claimed_messages": {}})
+
+func has_claimed_mail(message_id: String) -> bool:
+	return bool(get_mailbox_progress().get("claimed_messages", {}).get(message_id, false))
+
+func mark_mail_claimed(message_id: String) -> void:
+	var mailbox_progress := get_mailbox_progress()
+	var claimed := mailbox_progress.get("claimed_messages", {})
+	claimed[message_id] = true
+	mailbox_progress["claimed_messages"] = claimed
+	profile["mailbox_progress"] = mailbox_progress
+	save_profile()
+	emit_signal("mailbox_changed")
 
 func refresh_stamina() -> Dictionary:
 	var stamina := get_stamina_progress()
@@ -388,9 +406,14 @@ func use_inventory_item(item_id: String) -> String:
 		if not consume_inventory_item(item_id, 1):
 			return "Предмет закончился"
 		var qi_gain := int(item_def.get("qi_gain", 0))
+		var stamina_gain := int(item_def.get("stamina_gain", 0))
 		if qi_gain > 0:
 			add_qi(qi_gain * 10000)
-		return "%s использован, получено %d Ци" % [ConfigRepository.get_item_name(item_id), qi_gain]
+			return "%s использован, получено %d Ци" % [ConfigRepository.get_item_name(item_id), qi_gain]
+		if stamina_gain > 0:
+			add_stamina(stamina_gain)
+			return "%s использован, восстановлено %d энергии" % [ConfigRepository.get_item_name(item_id), stamina_gain]
+		return "%s использован" % ConfigRepository.get_item_name(item_id)
 	if item_type == "material" and item_id == "breakthrough_stone":
 		if not consume_inventory_item(item_id, 1):
 			return "Камень прорыва отсутствует"

@@ -151,10 +151,10 @@ text = "Оффлайн-награды"
 
 [node name="SyncPanel" type="PanelContainer" parent="."]
 layout_mode = 1
-offset_left = 420.0
+offset_left = 360.0
 offset_top = 146.0
 offset_right = 696.0
-offset_bottom = 210.0
+offset_bottom = 234.0
 
 [node name="SyncMargin" type="MarginContainer" parent="SyncPanel"]
 layout_mode = 2
@@ -163,19 +163,40 @@ theme_override_constants/margin_top = 6
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 6
 
-[node name="SyncHBox" type="HBoxContainer" parent="SyncPanel/SyncMargin"]
+[node name="SyncVBox" type="VBoxContainer" parent="SyncPanel/SyncMargin"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 
-[node name="SyncStatusLabel" type="Label" parent="SyncPanel/SyncMargin/SyncHBox"]
+[node name="SyncStatusLabel" type="Label" parent="SyncPanel/SyncMargin/SyncVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "SYNC: OK"
+
+[node name="SyncMetaLabel" type="Label" parent="SyncPanel/SyncMargin/SyncVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "restore: 0 · ack: never"
+
+[node name="SyncButtons" type="HBoxContainer" parent="SyncPanel/SyncMargin/SyncVBox"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="SyncReconnectButton" type="Button" parent="SyncPanel/SyncMargin/SyncVBox/SyncButtons"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-text = "SYNC: OK"
+text = "Reconnect"
 
-[node name="SyncFlushButton" type="Button" parent="SyncPanel/SyncMargin/SyncHBox"]
+[node name="SyncAckButton" type="Button" parent="SyncPanel/SyncMargin/SyncVBox/SyncButtons"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
+text = "Ack"
+
+[node name="SyncFlushButton" type="Button" parent="SyncPanel/SyncMargin/SyncVBox/SyncButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
 text = "Flush"
 
 [node name="HeroPanel" type="PanelContainer" parent="."]
@@ -326,7 +347,9 @@ layout_mode = 2
 text = "Общение"
 
 [connection signal="pressed" from="TopBar/TopMargin/TopHBox/MailButton" to="." method="_on_mail_pressed"]
-[connection signal="pressed" from="SyncPanel/SyncMargin/SyncHBox/SyncFlushButton" to="." method="_on_sync_flush_pressed"]
+[connection signal="pressed" from="SyncPanel/SyncMargin/SyncVBox/SyncButtons/SyncReconnectButton" to="." method="_on_sync_reconnect_pressed"]
+[connection signal="pressed" from="SyncPanel/SyncMargin/SyncVBox/SyncButtons/SyncAckButton" to="." method="_on_sync_ack_pressed"]
+[connection signal="pressed" from="SyncPanel/SyncMargin/SyncVBox/SyncButtons/SyncFlushButton" to="." method="_on_sync_flush_pressed"]
 [connection signal="pressed" from="MainCTAButton" to="." method="_on_cultivation_pressed"]
 [connection signal="pressed" from="BottomNav/CharacterButton" to="." method="_on_character_pressed"]
 [connection signal="pressed" from="RightMenu/InventoryButton" to="." method="_on_inventory_pressed"]

@@ -1,0 +1,117 @@
+{
+  "recipes": [
+    {
+      "id": "craft_qi_pill_small",
+      "name": "Алхимия · Малая пилюля Ци",
+      "discipline": "alchemy",
+      "qi_stage_required": "mortal_early",
+      "player_level_required": 1,
+      "station": "alchemy_furnace",
+      "craft_time_sec": 0,
+      "gold_cost": 120,
+      "bound_spirit_stone_cost": 4,
+      "ingredients": [
+        {"item_id": "medicinal_herb", "quantity": 2},
+        {"item_id": "essence_dust", "quantity": 1}
+      ],
+      "result": {"item_id": "qi_pill_small", "quantity": 1, "rarity": "common"},
+      "icon_key": "qi_pill_small",
+      "image_future_slot": "recipe_qi_pill_small"
+    },
+    {
+      "id": "craft_qi_pill_medium",
+      "name": "Алхимия · Средняя пилюля Ци",
+      "discipline": "alchemy",
+      "qi_stage_required": "mortal_late",
+      "player_level_required": 18,
+      "station": "alchemy_furnace",
+      "craft_time_sec": 0,
+      "gold_cost": 380,
+      "bound_spirit_stone_cost": 10,
+      "ingredients": [
+        {"item_id": "qi_pill_small", "quantity": 2},
+        {"item_id": "spirit_herb_bundle", "quantity": 1},
+        {"item_id": "essence_dust", "quantity": 2}
+      ],
+      "result": {"item_id": "qi_pill_medium", "quantity": 1, "rarity": "rare"},
+      "icon_key": "qi_pill_medium",
+      "image_future_slot": "recipe_qi_pill_medium"
+    },
+    {
+      "id": "craft_stamina_pill_small",
+      "name": "Алхимия · Пилюля бодрости",
+      "discipline": "alchemy",
+      "qi_stage_required": "mortal_mid",
+      "player_level_required": 8,
+      "station": "alchemy_furnace",
+      "craft_time_sec": 0,
+      "gold_cost": 220,
+      "bound_spirit_stone_cost": 6,
+      "ingredients": [
+        {"item_id": "wind_feather", "quantity": 1},
+        {"item_id": "medicinal_herb", "quantity": 2},
+        {"item_id": "essence_dust", "quantity": 1}
+      ],
+      "result": {"item_id": "stamina_pill_small", "quantity": 1, "rarity": "rare"},
+      "icon_key": "stamina_pill_small",
+      "image_future_slot": "recipe_stamina_pill_small"
+    },
+    {
+      "id": "craft_breakthrough_stone",
+      "name": "Кузница · Камень прорыва",
+      "discipline": "forge",
+      "qi_stage_required": "body_refining_early",
+      "player_level_required": 24,
+      "station": "spirit_forge",
+      "craft_time_sec": 0,
+      "gold_cost": 900,
+      "bound_spirit_stone_cost": 36,
+      "ingredients": [
+        {"item_id": "spirit_ore", "quantity": 2},
+        {"item_id": "lightning_bark", "quantity": 1},
+        {"item_id": "forge_seal", "quantity": 1}
+      ],
+      "result": {"item_id": "breakthrough_stone", "quantity": 1, "rarity": "epic"},
+      "icon_key": "breakthrough_stone",
+      "image_future_slot": "recipe_breakthrough_stone"
+    },
+    {
+      "id": "craft_spirit_weave_robe",
+      "name": "Кузница · Одеяние духовного плетения",
+      "discipline": "forge",
+      "qi_stage_required": "qi_condensation_early",
+      "player_level_required": 34,
+      "station": "spirit_forge",
+      "craft_time_sec": 0,
+      "gold_cost": 1400,
+      "bound_spirit_stone_cost": 48,
+      "ingredients": [
+        {"item_id": "cloud_silk", "quantity": 3},
+        {"item_id": "forge_seal", "quantity": 2},
+        {"item_id": "essence_dust", "quantity": 2}
+      ],
+      "result": {"item_id": "spirit_weave_robe", "quantity": 1, "rarity": "epic"},
+      "icon_key": "spirit_weave_robe",
+      "image_future_slot": "recipe_spirit_weave_robe"
+    },
+    {
+      "id": "craft_thunder_ring",
+      "name": "Кузница · Кольцо громового ядра",
+      "discipline": "forge",
+      "qi_stage_required": "foundation_mid",
+      "player_level_required": 42,
+      "station": "spirit_forge",
+      "craft_time_sec": 0,
+      "gold_cost": 1850,
+      "bound_spirit_stone_cost": 70,
+      "ingredients": [
+        {"item_id": "ring_core_fragment", "quantity": 3},
+        {"item_id": "lightning_bark", "quantity": 2},
+        {"item_id": "forge_seal", "quantity": 2}
+      ],
+      "result": {"item_id": "thunder_core_ring", "quantity": 1, "rarity": "legendary"},
+      "icon_key": "thunder_core_ring",
+      "image_future_slot": "recipe_thunder_core_ring"
+    }
+  ]
+}

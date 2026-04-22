@@ -34,6 +34,13 @@ func _ready() -> void:
 func _banner_id() -> String:
 	return str(current_banner.get("id", "default_banner"))
 
+func _banner_live_state() -> Dictionary:
+	GameSession.refresh_live_ops_state()
+	return GameSession.get_banner_live_state(_banner_id())
+
+func _banner_is_active() -> bool:
+	return bool(_banner_live_state().get("featured", true))
+
 func _on_summon_progress_changed() -> void:
 	pity_counter = PlayerState.get_banner_pity(_banner_id())
 	_refresh_info("Прогресс призыва синхронизирован")
@@ -66,17 +73,24 @@ func _refresh_info(message: String) -> void:
 	var pity_max := int(current_banner.get("pity", 30))
 	var currency_id := str(current_banner.get("currency", "jade"))
 	var balance := int(PlayerState.get_currencies().get(currency_id, 0))
-	var ready_badge := "[ГОТОВО]" if balance >= cost else "[НЕТ ВАЛЮТЫ]"
+	var live_state := _banner_live_state()
+	var active := bool(live_state.get("featured", true))
+	var ready_badge := "[LIMITED]" if active else "[ROTATION OFF]"
+	if active:
+		ready_badge = "[ГОТОВО]" if balance >= cost else "[НЕТ ВАЛЮТЫ]"
 	var pity_badge := "[PITY ГОТОВ]" if pity_counter >= pity_max else "[PITY %d/%d]" % [pity_counter, pity_max]
-	info_label.text = "[b]%s[/b]\n\n%s\nВалюта: %s\nЦена: %s\n%s" % [
+	info_label.text = "[b]%s[/b]\n\n%s\nВалюта: %s\nЦена: %s\nCycle: %s\n%s" % [
 		message,
 		ready_badge,
 		currency_id,
 		str(cost),
+		str(live_state.get("cycle", 0)),
 		pity_badge
 	]
-	pull_once_button.disabled = balance < cost
-	pull_ten_button.disabled = balance < cost * 10
+	pull_once_button.disabled = (balance < cost) or not active
+	pull_ten_button.disabled = (balance < cost * 10) or not active
+	pull_once_button.text = "Призвать 1" if active else "Неактивно"
+	pull_ten_button.text = "Призвать 10" if active else "Ротация"
 
 func _clear_results_placeholder() -> void:
 	for child in result_list.get_children():
@@ -150,13 +164,17 @@ func _queue_summon_action(results: Array, pull_count: int) -> void:
 		"cost_per_pull": int(current_banner.get("cost_per_pull", 10)),
 		"currency_id": str(current_banner.get("currency", "jade")),
 		"pity_after": pity_counter,
-		"results": results
+		"results": results,
+		"live_state": _banner_live_state()
 	})
 
 func _persist_pity() -> void:
 	PlayerState.set_banner_pity(_banner_id(), pity_counter)
 
 func _on_pull_once_pressed() -> void:
+	if not _banner_is_active():
+		_refresh_info("Баннер временно неактивен в этой ротации")
+		return
 	var cost := int(current_banner.get("cost_per_pull", 10))
 	var currency_id := str(current_banner.get("currency", "jade"))
 	if not PlayerState.spend_currency(currency_id, cost):
@@ -189,6 +207,9 @@ func _resolve_reward() -> Dictionary:
 	return pool[0]
 
 func _on_pull_ten_pressed() -> void:
+	if not _banner_is_active():
+		_refresh_info("Баннер временно неактивен в этой ротации")
+		return
 	var results: Array = []
 	for i in range(10):
 		var cost := int(current_banner.get("cost_per_pull", 10))

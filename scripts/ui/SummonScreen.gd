@@ -133,6 +133,17 @@ func _result_icon(entry: Dictionary) -> Texture2D:
 		return IconLoader.get_pet_icon(reward_id)
 	return IconLoader.get_item_icon(reward_id)
 
+func _queue_summon_action(results: Array, pull_count: int) -> void:
+	OnlineSyncService.queue_summon_pull({
+		"banner_id": str(current_banner.get("id", "default_banner")),
+		"banner_title": str(current_banner.get("title", "Призыв")),
+		"pull_count": pull_count,
+		"cost_per_pull": int(current_banner.get("cost_per_pull", 10)),
+		"currency_id": str(current_banner.get("currency", "jade")),
+		"pity_after": pity_counter,
+		"results": results
+	})
+
 func _on_pull_once_pressed() -> void:
 	var cost := int(current_banner.get("cost_per_pull", 10))
 	var currency_id := str(current_banner.get("currency", "jade"))
@@ -143,6 +154,7 @@ func _on_pull_once_pressed() -> void:
 	var reward := _resolve_reward()
 	var result := PlayerState.grant_summon_reward(reward)
 	_show_results([result])
+	_queue_summon_action([result], 1)
 	_refresh_info("Получено: %s" % str(result.get("text", "награда")))
 
 func _resolve_reward() -> Dictionary:
@@ -177,6 +189,7 @@ func _on_pull_ten_pressed() -> void:
 		_refresh_info("Недостаточно валюты для x10 призыва")
 		return
 	_show_results(results)
+	_queue_summon_action(results, results.size())
 	_refresh_info("Серия призыва завершена")
 
 func _on_back_pressed() -> void:

@@ -69,9 +69,17 @@ func _on_cultivate_pressed() -> void:
 	status_label.modulate = UITheme.COLOR_SUCCESS
 
 func _on_breakthrough_pressed() -> void:
+	var before_stage := str(PlayerState.get_cultivation().get("current_stage_id", ""))
 	var result_text := PlayerState.perform_breakthrough()
 	status_label.text = result_text
 	status_label.modulate = UITheme.COLOR_SUCCESS if result_text.begins_with("Прорыв успешен") else UITheme.COLOR_GOLD
+	if result_text.begins_with("Прорыв успешен"):
+		OnlineSyncService.queue_breakthrough({
+			"before_stage": before_stage,
+			"after_stage": str(PlayerState.get_cultivation().get("current_stage_id", before_stage)),
+			"new_level": PlayerState.get_level(),
+			"new_power": PlayerState.get_power()
+		})
 
 func _on_body_pressed() -> void:
 	PlayerState.refine_body()

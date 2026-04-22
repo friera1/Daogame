@@ -19,11 +19,12 @@ func _refresh_rewards_text() -> void:
 	var items_text := "Предметы: нет"
 	if item_lines.size() > 0:
 		items_text = "Предметы:\n%s" % "\n".join(item_lines)
-	rewards_label.text = "%s\n\n[b]Награды[/b]\n\nЗолото: %s\nЭссенция Ци: %s\nДуховные камни: %s\n%s" % [
+	rewards_label.text = "%s\n\n[b]Награды[/b]\n\nЗолото: %s\nЭссенция Ци: %s\nДуховные камни: %s\nНефрит: %s\n%s" % [
 		claim_badge,
 		str(rewards.get("gold", 0)),
 		str(rewards.get("qi_essence", 0)),
 		str(rewards.get("spirit_stone", 0)),
+		str(rewards.get("jade", 0)),
 		items_text
 	]
 

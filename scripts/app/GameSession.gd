@@ -129,8 +129,9 @@ func has_completed_story_battle(node_id: String) -> bool:
 func is_story_chapter_unlocked(chapter_id: String) -> bool:
 	return PlayerState.is_story_chapter_unlocked(chapter_id)
 
-func mark_story_battle_completed(node_id: String, chapter_id: String) -> void:
+func mark_story_battle_completed(node_id: String, chapter_id: String, stars: int = 1) -> void:
 	PlayerState.mark_story_battle_completed(node_id)
+	PlayerState.set_story_battle_stars(node_id, stars)
 	var next_id := _next_chapter_id(chapter_id)
 	if not next_id.is_empty():
 		PlayerState.unlock_story_chapter(next_id)
@@ -161,6 +162,33 @@ func _build_story_rewards(chapter_index: int, victory: bool = true) -> Dictionar
 		"items": items
 	}
 
+func _star_multiplier(stars: int) -> float:
+	match clamp(stars, 1, 3):
+		1:
+			return 0.6
+		2:
+			return 0.85
+		_:
+			return 1.0
+
+func _scaled_story_rewards(chapter_index: int, stars: int) -> Dictionary:
+	var base := _build_story_rewards(chapter_index, true)
+	var mult := _star_multiplier(stars)
+	var scaled_items: Array = []
+	for item in base.get("items", []):
+		var qty := max(1, int(floor(float(int(item.get("quantity", 1))) * mult)))
+		scaled_items.append({
+			"id": item.get("id", ""),
+			"quantity": qty,
+			"rarity": item.get("rarity", "rare")
+		})
+	return {
+		"gold": int(floor(float(int(base.get("gold", 0))) * mult)),
+		"qi_essence": int(floor(float(int(base.get("qi_essence", 0))) * mult)),
+		"spirit_stone": int(floor(float(int(base.get("spirit_stone", 0))) * mult)),
+		"items": scaled_items
+	}
+
 func _grant_rewards(rewards: Dictionary) -> void:
 	PlayerState.add_currency("gold", int(rewards.get("gold", 0)))
 	PlayerState.add_currency("bound_spirit_stone", int(rewards.get("qi_essence", 0)))
@@ -173,7 +201,8 @@ func perform_story_sweep(chapter_id: String, node_id: String, chapter_index: int
 		return {"ok": false, "text": "Сначала нужно пройти этот бой вручную"}
 	if not PlayerState.spend_stamina(STORY_SWEEP_STAMINA_COST):
 		return {"ok": false, "text": "Недостаточно энергии для быстрого фарма"}
-	var rewards := _build_story_rewards(chapter_index, true)
+	var stars := max(PlayerState.get_story_battle_stars(node_id), 1)
+	var rewards := _scaled_story_rewards(chapter_index, stars)
 	_grant_rewards(rewards)
 	return {
 		"ok": true,
@@ -181,6 +210,7 @@ func perform_story_sweep(chapter_id: String, node_id: String, chapter_index: int
 		"node_id": node_id,
 		"chapter_index": chapter_index,
 		"enemy_name": enemy_name,
+		"stars": stars,
 		"stamina_spent": STORY_SWEEP_STAMINA_COST,
 		"runs": 1,
 		"rewards": rewards,
@@ -195,9 +225,10 @@ func perform_multi_story_sweep(chapter_id: String, node_id: String, chapter_inde
 	var total_cost := STORY_SWEEP_STAMINA_COST * runs
 	if not PlayerState.spend_stamina(total_cost):
 		return {"ok": false, "text": "Недостаточно энергии для серии проходов"}
+	var stars := max(PlayerState.get_story_battle_stars(node_id), 1)
 	var total_rewards := {"gold": 0, "qi_essence": 0, "spirit_stone": 0, "items": []}
 	for i in range(runs):
-		var rewards := _build_story_rewards(chapter_index, true)
+		var rewards := _scaled_story_rewards(chapter_index, stars)
 		total_rewards["gold"] = int(total_rewards.get("gold", 0)) + int(rewards.get("gold", 0))
 		total_rewards["qi_essence"] = int(total_rewards.get("qi_essence", 0)) + int(rewards.get("qi_essence", 0))
 		total_rewards["spirit_stone"] = int(total_rewards.get("spirit_stone", 0)) + int(rewards.get("spirit_stone", 0))
@@ -210,6 +241,7 @@ func perform_multi_story_sweep(chapter_id: String, node_id: String, chapter_inde
 		"node_id": node_id,
 		"chapter_index": chapter_index,
 		"enemy_name": enemy_name,
+		"stars": stars,
 		"stamina_spent": total_cost,
 		"runs": runs,
 		"rewards": total_rewards,
@@ -232,6 +264,6 @@ func claim_last_battle_rewards() -> Dictionary:
 	if bool(last_battle_result.get("victory", false)):
 		var context := last_battle_result.get("context", {})
 		if str(context.get("source", "")) == "story":
-			mark_story_battle_completed(str(context.get("node_id", "")), str(context.get("chapter_id", "")))
+			mark_story_battle_completed(str(context.get("node_id", "")), str(context.get("chapter_id", "")), int(last_battle_result.get("stars", 1)))
 	last_battle_result["claimed"] = true
 	return rewards

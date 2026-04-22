@@ -49,6 +49,11 @@ func get_level() -> int:
 func get_power() -> int:
 	return int(profile.get("combat_power", 0))
 
+func add_power(amount: int) -> void:
+	profile["combat_power"] = get_power() + amount
+	save_profile()
+	emit_signal("player_loaded")
+
 func get_currencies() -> Dictionary:
 	return profile.get("currencies", {})
 
@@ -109,14 +114,50 @@ func refine_dao_heart() -> void:
 	save_profile()
 	emit_signal("cultivation_changed")
 
+func _stage_index(stage_id: String) -> int:
+	var stages := ConfigRepository.stages.get("stages", [])
+	for i in range(stages.size()):
+		if str(stages[i].get("id", "")) == stage_id:
+			return i
+	return 0
+
+func _stage_by_index(index: int) -> Dictionary:
+	var stages := ConfigRepository.stages.get("stages", [])
+	if index < 0 or index >= stages.size():
+		return {}
+	return stages[index]
+
 func add_qi(amount: int) -> void:
 	var cult := get_cultivation()
 	cult["qi_exp"] = int(cult.get("qi_exp", 0)) + amount
 	var required := int(cult.get("qi_exp_required", 1))
-	cult["breakthrough_ready"] = cult["qi_exp"] >= required
+	cult["breakthrough_ready"] = int(cult.get("qi_exp", 0)) >= required
 	profile["cultivation_progress"] = cult
 	save_profile()
 	emit_signal("cultivation_changed")
+
+func perform_breakthrough() -> String:
+	var cult := get_cultivation()
+	if not bool(cult.get("breakthrough_ready", false)):
+		return "Недостаточно Ци для прорыва"
+	if not consume_inventory_item("breakthrough_stone", 1):
+		return "Нужен Камень прорыва"
+	var current_stage_id := str(cult.get("current_stage_id", "mortal_early"))
+	var next_stage := _stage_by_index(_stage_index(current_stage_id) + 1)
+	if next_stage.is_empty():
+		add_inventory_item("breakthrough_stone", 1, "epic")
+		return "Достигнут предел текущего вертикального среза"
+	cult["current_stage_id"] = str(next_stage.get("id", current_stage_id))
+	cult["qi_exp"] = 0
+	cult["qi_exp_required"] = int(next_stage.get("qi_required", cult.get("qi_exp_required", 1)))
+	cult["breakthrough_ready"] = false
+	profile["cultivation_progress"] = cult
+	profile["level"] = get_level() + 1
+	profile["combat_power"] = get_power() + 180
+	save_profile()
+	emit_signal("cultivation_changed")
+	emit_signal("player_loaded")
+	return "Прорыв успешен: %s" % ConfigRepository.get_stage_name(str(next_stage.get("id", current_stage_id)))
 
 func spend_currency(currency_id: String, amount: int) -> bool:
 	var currencies := get_currencies()

@@ -25,16 +25,34 @@ func _ready() -> void:
 	_apply_art()
 	player_name.text = PlayerState.get_name()
 	enemy_name.text = str(battle_context.get("enemy_name", "Страж духовных руин"))
-	if not PlayerState.spend_stamina(BATTLE_STAMINA_COST):
-		_append_log("Недостаточно энергии: нужно %d" % BATTLE_STAMINA_COST)
+	var stamina_cost := _battle_stamina_cost()
+	if not PlayerState.spend_stamina(stamina_cost):
+		_append_log("Недостаточно энергии: нужно %d" % stamina_cost)
 		_disable_skills()
 		await get_tree().create_timer(1.2).timeout
 		SceneRouter.goto_scene("res://scenes/lobby/LobbyScreen.tscn")
 		return
-	_append_log("Потрачено энергии: %d" % BATTLE_STAMINA_COST)
+	_append_log("Потрачено энергии: %d" % stamina_cost)
 	_apply_context_scaling()
 	_append_log("Бой начался")
 	_refresh()
+
+func _battle_node_type() -> String:
+	return str(battle_context.get("node_type", "battle"))
+
+func _battle_stamina_cost() -> int:
+	if str(battle_context.get("source", "")) == "story":
+		return GameSession.get_story_sweep_cost(_battle_node_type()) + 2
+	return BATTLE_STAMINA_COST
+
+func _battle_multiplier() -> float:
+	match _battle_node_type():
+		"elite_battle":
+			return 1.35
+		"boss_battle":
+			return 1.8
+		_:
+			return 1.0
 
 func _apply_art() -> void:
 	var art := ArtLoader.load_texture_safe(BATTLE_BG_PATH)
@@ -52,10 +70,15 @@ func _apply_context_scaling() -> void:
 		if str(stages[i].get("id", "")) == stage_id:
 			stage_bonus = i
 			break
-	enemy_hp_value += (chapter_index - 1) * 220 + stage_bonus * 60
+	var mult := _battle_multiplier()
+	enemy_hp_value = int(floor(float(enemy_hp_value + (chapter_index - 1) * 220 + stage_bonus * 60) * mult))
 	player_hp_value += stage_bonus * 40
 	player_hp_max = player_hp_value
 	_append_log("Контекст боя: глава %d, стадия %s" % [chapter_index, ConfigRepository.get_stage_name(stage_id)])
+	if _battle_node_type() == "elite_battle":
+		_append_log("Элитный враг усиливает награды и сложность")
+	elif _battle_node_type() == "boss_battle":
+		_append_log("Босс-узел активен: повышенная цена входа и редкие трофеи")
 
 func _refresh() -> void:
 	player_hp.text = "HP: %d" % player_hp_value
@@ -80,20 +103,11 @@ func _disable_skills() -> void:
 	ultimate_button.disabled = true
 
 func _build_rewards(victory: bool) -> Dictionary:
-	var chapter_index := int(battle_context.get("chapter_index", 1))
-	var gold := (320 if victory else 80) + (chapter_index - 1) * 140
-	var qi_essence := (18 if victory else 6) + (chapter_index - 1) * 8
-	var spirit_stone := (1 if victory else 0) + (1 if victory and chapter_index >= 3 else 0)
-	var items: Array = []
-	if victory:
-		items.append({"id": "qi_pill_small", "quantity": 1 + int(chapter_index >= 2), "rarity": "rare"})
-		if chapter_index >= 3:
-			items.append({"id": "breakthrough_stone", "quantity": 1, "rarity": "epic"})
-	return {
-		"gold": gold,
-		"qi_essence": qi_essence,
-		"spirit_stone": spirit_stone,
-		"items": items
+	return GameSession._build_story_rewards(int(battle_context.get("chapter_index", 1)), _battle_node_type(), victory) if str(battle_context.get("source", "")) == "story" else {
+		"gold": 320,
+		"qi_essence": 18,
+		"spirit_stone": 1,
+		"items": [{"id": "qi_pill_small", "quantity": 1, "rarity": "rare"}]
 	}
 
 func _story_battle_stars(victory: bool) -> int:
@@ -126,7 +140,7 @@ func _finalize_battle(victory: bool) -> void:
 func _enemy_turn() -> void:
 	if battle_over:
 		return
-	var damage := 90 + int(battle_context.get("chapter_index", 1) - 1) * 18
+	var damage := int(floor((90 + int(battle_context.get("chapter_index", 1) - 1) * 18) * _battle_multiplier()))
 	player_hp_value = max(player_hp_value - damage, 0)
 	_append_log("Противник наносит %d урона" % damage)
 	_refresh()

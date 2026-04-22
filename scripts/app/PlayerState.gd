@@ -9,6 +9,7 @@ signal equipment_changed
 signal tutorial_changed
 signal inventory_changed
 signal story_progress_changed
+signal summon_progress_changed
 
 var profile: Dictionary = {}
 
@@ -43,6 +44,8 @@ func _ensure_profile_defaults() -> void:
 			"completed_battles": {},
 			"claimed_rewards": {}
 		}
+	if not profile.has("summon_progress"):
+		profile["summon_progress"] = {}
 
 func save_profile() -> void:
 	SaveService.save_profile(profile)
@@ -81,6 +84,19 @@ func get_pet_shards_for(pet_id: String) -> int:
 
 func get_story_progress() -> Dictionary:
 	return profile.get("story_progress", {})
+
+func get_summon_progress() -> Dictionary:
+	return profile.get("summon_progress", {})
+
+func get_banner_pity(banner_id: String) -> int:
+	return int(get_summon_progress().get(banner_id, 0))
+
+func set_banner_pity(banner_id: String, pity_value: int) -> void:
+	var summon_progress := get_summon_progress()
+	summon_progress[banner_id] = pity_value
+	profile["summon_progress"] = summon_progress
+	save_profile()
+	emit_signal("summon_progress_changed")
 
 func is_story_chapter_unlocked(chapter_id: String) -> bool:
 	return bool(get_story_progress().get("unlocked_chapters", {}).get(chapter_id, false))

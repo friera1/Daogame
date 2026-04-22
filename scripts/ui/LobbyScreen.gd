@@ -40,6 +40,7 @@ func _ready() -> void:
 	PlayerState.currencies_changed.connect(_refresh)
 	PlayerState.skills_changed.connect(_refresh)
 	PlayerState.pets_changed.connect(_refresh)
+	PlayerState.stamina_changed.connect(_refresh)
 	_show_idle_status()
 	_maybe_show_tutorial()
 
@@ -104,13 +105,15 @@ func _apply_icons() -> void:
 func _refresh() -> void:
 	name_label.text = PlayerState.get_name()
 	level_label.text = "Ур. %d" % PlayerState.get_level()
-	power_label.text = "Сила: %d" % PlayerState.get_power()
 	hero_title.text = PlayerState.get_name()
 
 	var cult := PlayerState.get_cultivation()
 	var stage_id := str(cult.get("current_stage_id", "mortal_early"))
 	stage_label.text = ConfigRepository.get_stage_name(stage_id)
 	progress_label.text = "%s / %s" % [_format_big(int(cult.get("qi_exp", 0))), _format_big(int(cult.get("qi_exp_required", 1)))]
+
+	var stamina := PlayerState.refresh_stamina()
+	power_label.text = "Сила: %d · Энергия: %d/%d" % [PlayerState.get_power(), int(stamina.get("current", 0)), int(stamina.get("max", 30))]
 
 	var currencies := PlayerState.get_currencies()
 	stones_label.text = str(currencies.get("spirit_stone", 0))
@@ -209,6 +212,11 @@ func _on_guild_pressed() -> void:
 	SceneRouter.goto_scene("res://scenes/guild/GuildScreen.tscn")
 
 func _on_battle_pressed() -> void:
+	var stamina := PlayerState.refresh_stamina()
+	if int(stamina.get("current", 0)) < 6:
+		status_label.text = "Недостаточно энергии для боя (нужно 6)"
+		status_label.modulate = UITheme.COLOR_WARNING
+		return
 	GameSession.set_battle_context({
 		"source": "lobby",
 		"chapter_index": 1,

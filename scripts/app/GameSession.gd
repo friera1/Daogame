@@ -1,12 +1,15 @@
 extends Node
 
 const STORY_SWEEP_STAMINA_COST := 4
+const EVENT_DUNGEON_MAX_RUNS_PER_DAY := 3
+const EVENT_DUNGEON_STAMINA_COST := 8
 
 var is_initialized: bool = false
 var last_battle_result: Dictionary = {}
 var claimed_daily_missions: Dictionary = {}
 var pending_battle_context: Dictionary = {}
 var current_daily_key: String = ""
+var event_dungeon_runs_used: Dictionary = {}
 
 func initialize() -> void:
 	if is_initialized:
@@ -33,6 +36,7 @@ func _apply_daily_reset_if_needed() -> void:
 	if current_daily_key == today:
 		return
 	claimed_daily_missions.clear()
+	event_dungeon_runs_used.clear()
 	current_daily_key = today
 	_ensure_system_mail_generated()
 
@@ -72,7 +76,8 @@ func get_daily_reset_status() -> Dictionary:
 		"daily_key": current_daily_key,
 		"seconds_until_reset": seconds_until_reset,
 		"shop_cycle": _cycle_day_index() % 3,
-		"banner_cycle": _cycle_day_index() % 2
+		"banner_cycle": _cycle_day_index() % 2,
+		"event_cycle": _cycle_day_index() % 3
 	}
 
 func get_shop_offer_state(offer_id: String) -> Dictionary:
@@ -95,6 +100,62 @@ func get_banner_live_state(banner_id: String) -> Dictionary:
 		"featured": cycle == 0,
 		"cycle": cycle,
 		"banner_id": banner_id
+	}
+
+func get_event_dungeon_state() -> Dictionary:
+	_apply_daily_reset_if_needed()
+	var live_ops := get_daily_reset_status()
+	var cycle := int(live_ops.get("event_cycle", 0))
+	var titles := ["Пещера духовных жил", "Алтарь небесной молнии", "Дворец алой печати"]
+	var enemy_names := ["Хранитель жилы", "Грозовой экзарх", "Повелитель алой печати"]
+	var event_id := "event_dungeon_%d" % cycle
+	var used := int(event_dungeon_runs_used.get(event_id, 0))
+	return {
+		"event_id": event_id,
+		"cycle": cycle,
+		"title": titles[min(cycle, titles.size() - 1)],
+		"enemy_name": enemy_names[min(cycle, enemy_names.size() - 1)],
+		"max_runs": EVENT_DUNGEON_MAX_RUNS_PER_DAY,
+		"used_runs": used,
+		"remaining_runs": max(EVENT_DUNGEON_MAX_RUNS_PER_DAY - used, 0),
+		"stamina_cost": EVENT_DUNGEON_STAMINA_COST,
+		"active": true
+	}
+
+func can_enter_event_dungeon() -> bool:
+	return int(get_event_dungeon_state().get("remaining_runs", 0)) > 0
+
+func begin_event_dungeon_run() -> Dictionary:
+	var state := get_event_dungeon_state()
+	if int(state.get("remaining_runs", 0)) <= 0:
+		return {"ok": false, "text": "Попытки события на сегодня закончились"}
+	if not PlayerState.spend_stamina(EVENT_DUNGEON_STAMINA_COST):
+		return {"ok": false, "text": "Недостаточно энергии для ивент-подземелья"}
+	var event_id := str(state.get("event_id", "event_dungeon_0"))
+	event_dungeon_runs_used[event_id] = int(event_dungeon_runs_used.get(event_id, 0)) + 1
+	return {
+		"ok": true,
+		"event_id": event_id,
+		"stamina_cost": EVENT_DUNGEON_STAMINA_COST,
+		"remaining_runs": max(int(state.get("remaining_runs", 0)) - 1, 0)
+	}
+
+func get_event_dungeon_rewards(victory: bool) -> Dictionary:
+	var state := get_event_dungeon_state()
+	var cycle := int(state.get("cycle", 0))
+	if not victory:
+		return {"gold": 120, "qi_essence": 10, "spirit_stone": 0, "jade": 0, "items": []}
+	var items: Array = [{"id": "qi_pill_small", "quantity": 2 + cycle, "rarity": "rare"}]
+	if cycle >= 1:
+		items.append({"id": "stamina_pill_small", "quantity": 1, "rarity": "rare"})
+	if cycle >= 2:
+		items.append({"id": "breakthrough_stone", "quantity": 1, "rarity": "epic"})
+	return {
+		"gold": 900 + cycle * 280,
+		"qi_essence": 75 + cycle * 24,
+		"spirit_stone": 2 + cycle,
+		"jade": 6 + cycle * 2,
+		"items": items
 	}
 
 func has_claimed_story_reward(node_id: String) -> bool:
@@ -211,6 +272,7 @@ func _grant_rewards(rewards: Dictionary) -> void:
 	PlayerState.add_currency("gold", int(rewards.get("gold", 0)))
 	PlayerState.add_currency("bound_spirit_stone", int(rewards.get("qi_essence", 0)))
 	PlayerState.add_currency("spirit_stone", int(rewards.get("spirit_stone", 0)))
+	PlayerState.add_currency("jade", int(rewards.get("jade", 0)))
 	for item in rewards.get("items", []):
 		PlayerState.add_inventory_item(str(item.get("id", "")), int(item.get("quantity", 1)), str(item.get("rarity", "rare")))
 
@@ -246,12 +308,13 @@ func perform_multi_story_sweep(chapter_id: String, node_id: String, chapter_inde
 	if not PlayerState.spend_stamina(total_cost):
 		return {"ok": false, "text": "Недостаточно энергии для серии проходов"}
 	var stars := max(PlayerState.get_story_battle_stars(node_id), 1)
-	var total_rewards := {"gold": 0, "qi_essence": 0, "spirit_stone": 0, "items": []}
+	var total_rewards := {"gold": 0, "qi_essence": 0, "spirit_stone": 0, "jade": 0, "items": []}
 	for i in range(runs):
 		var rewards := _scaled_story_rewards(chapter_index, stars, node_type)
 		total_rewards["gold"] = int(total_rewards.get("gold", 0)) + int(rewards.get("gold", 0))
 		total_rewards["qi_essence"] = int(total_rewards.get("qi_essence", 0)) + int(rewards.get("qi_essence", 0))
 		total_rewards["spirit_stone"] = int(total_rewards.get("spirit_stone", 0)) + int(rewards.get("spirit_stone", 0))
+		total_rewards["jade"] = int(total_rewards.get("jade", 0)) + int(rewards.get("jade", 0))
 		for item in rewards.get("items", []):
 			total_rewards["items"].append(item)
 	_grant_rewards(total_rewards)

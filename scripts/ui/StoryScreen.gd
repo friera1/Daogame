@@ -84,6 +84,18 @@ func _show_chapter(chapter_id: String) -> void:
 				UITheme.apply_accent_button(sweep_button, true)
 				sweep_button.pressed.connect(_sweep_node.bind(node, chapter_id))
 				action_box.add_child(sweep_button)
+				var multi_button := Button.new()
+				multi_button.text = "x3"
+				multi_button.icon = IconLoader.get_currency_icon("jade")
+				UITheme.apply_accent_button(multi_button, false)
+				multi_button.pressed.connect(_multi_sweep_node.bind(node, chapter_id, 3))
+				action_box.add_child(multi_button)
+				var auto_button := Button.new()
+				auto_button.text = "Auto"
+				auto_button.icon = IconLoader.get_skill_icon("azure_slash")
+				UITheme.apply_accent_button(auto_button, false)
+				auto_button.pressed.connect(_auto_farm_node.bind(node, chapter_id))
+				action_box.add_child(auto_button)
 			row.add_child(icon)
 			row.add_child(label)
 			row.add_child(action_box)
@@ -137,21 +149,53 @@ func _open_node(node: Dictionary, chapter_id: String) -> void:
 		return
 	info_label.text = "[b]%s[/b]\n\n%s" % [str(node.get("title", "Узел")), _node_description(node_type)]
 
-func _sweep_node(node: Dictionary, chapter_id: String) -> void:
-	var result := GameSession.perform_story_sweep(chapter_id, str(node.get("id", "")), _chapter_index(chapter_id), str(node.get("title", "Страж главы")))
-	if not bool(result.get("ok", false)):
-		info_label.text = "[b]%s[/b]\n\n%s" % [str(node.get("title", "Узел")), str(result.get("text", "Sweep недоступен"))]
-		return
-	OnlineSyncService.queue_action("story_sweep", {
+func _queue_story_sweep(action_type: String, node: Dictionary, chapter_id: String, result: Dictionary) -> void:
+	OnlineSyncService.queue_action(action_type, {
 		"chapter_id": chapter_id,
 		"node_id": str(node.get("id", "")),
 		"chapter_index": _chapter_index(chapter_id),
 		"enemy_name": str(node.get("title", "Страж главы")),
 		"stamina_spent": int(result.get("stamina_spent", 0)),
+		"runs": int(result.get("runs", 1)),
 		"rewards": result.get("rewards", {})
 	})
+
+func _sweep_node(node: Dictionary, chapter_id: String) -> void:
+	var result := GameSession.perform_story_sweep(chapter_id, str(node.get("id", "")), _chapter_index(chapter_id), str(node.get("title", "Страж главы")))
+	if not bool(result.get("ok", false)):
+		info_label.text = "[b]%s[/b]\n\n%s" % [str(node.get("title", "Узел")), str(result.get("text", "Sweep недоступен"))]
+		return
+	_queue_story_sweep("story_sweep", node, chapter_id, result)
 	info_label.text = "[b]%s[/b]\n\nБыстрый проход выполнен за %d энергии.\n\nПолучено:\n%s" % [
 		str(node.get("title", "Узел")),
+		int(result.get("stamina_spent", 0)),
+		_format_sweep_rewards(result.get("rewards", {}))
+	]
+	_refresh_chapters()
+
+func _multi_sweep_node(node: Dictionary, chapter_id: String, runs: int) -> void:
+	var result := GameSession.perform_multi_story_sweep(chapter_id, str(node.get("id", "")), _chapter_index(chapter_id), str(node.get("title", "Страж главы")), runs)
+	if not bool(result.get("ok", false)):
+		info_label.text = "[b]%s[/b]\n\n%s" % [str(node.get("title", "Узел")), str(result.get("text", "Multi-sweep недоступен"))]
+		return
+	_queue_story_sweep("story_multi_sweep", node, chapter_id, result)
+	info_label.text = "[b]%s[/b]\n\nСерия x%d выполнена за %d энергии.\n\nПолучено:\n%s" % [
+		str(node.get("title", "Узел")),
+		int(result.get("runs", runs)),
+		int(result.get("stamina_spent", 0)),
+		_format_sweep_rewards(result.get("rewards", {}))
+	]
+	_refresh_chapters()
+
+func _auto_farm_node(node: Dictionary, chapter_id: String) -> void:
+	var result := GameSession.perform_story_auto_farm(chapter_id, str(node.get("id", "")), _chapter_index(chapter_id), str(node.get("title", "Страж главы")))
+	if not bool(result.get("ok", false)):
+		info_label.text = "[b]%s[/b]\n\n%s" % [str(node.get("title", "Узел")), str(result.get("text", "Auto-farm недоступен"))]
+		return
+	_queue_story_sweep("story_auto_farm", node, chapter_id, result)
+	info_label.text = "[b]%s[/b]\n\nАвтофарм x%d выполнен за %d энергии.\n\nПолучено:\n%s" % [
+		str(node.get("title", "Узел")),
+		int(result.get("runs", 1)),
 		int(result.get("stamina_spent", 0)),
 		_format_sweep_rewards(result.get("rewards", {}))
 	]

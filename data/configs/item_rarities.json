@@ -1,0 +1,58 @@
+{
+  "rarities": [
+    {
+      "id": "common",
+      "name": "Обычный",
+      "color": "#B8BFCB",
+      "frame_style": "frame_common",
+      "drop_weight": 100,
+      "sell_multiplier": 1.0,
+      "image_frame": "rarity_common"
+    },
+    {
+      "id": "uncommon",
+      "name": "Необычный",
+      "color": "#72C97D",
+      "frame_style": "frame_uncommon",
+      "drop_weight": 70,
+      "sell_multiplier": 1.2,
+      "image_frame": "rarity_uncommon"
+    },
+    {
+      "id": "rare",
+      "name": "Редкий",
+      "color": "#5EBBFF",
+      "frame_style": "frame_rare",
+      "drop_weight": 40,
+      "sell_multiplier": 1.7,
+      "image_frame": "rarity_rare"
+    },
+    {
+      "id": "epic",
+      "name": "Эпический",
+      "color": "#B27DFF",
+      "frame_style": "frame_epic",
+      "drop_weight": 18,
+      "sell_multiplier": 2.6,
+      "image_frame": "rarity_epic"
+    },
+    {
+      "id": "legendary",
+      "name": "Легендарный",
+      "color": "#F4C55C",
+      "frame_style": "frame_legendary",
+      "drop_weight": 8,
+      "sell_multiplier": 4.0,
+      "image_frame": "rarity_legendary"
+    },
+    {
+      "id": "mythic",
+      "name": "Мифический",
+      "color": "#FF8B6B",
+      "frame_style": "frame_mythic",
+      "drop_weight": 3,
+      "sell_multiplier": 6.5,
+      "image_frame": "rarity_mythic"
+    }
+  ]
+}

@@ -143,18 +143,36 @@ func _next_chapter_id(chapter_id: String) -> String:
 			return str(chapters[i + 1].get("id", ""))
 	return ""
 
-func get_story_sweep_cost() -> int:
-	return STORY_SWEEP_STAMINA_COST
+func _story_node_multiplier(node_type: String) -> float:
+	match node_type:
+		"elite_battle":
+			return 1.45
+		"boss_battle":
+			return 1.9
+		_:
+			return 1.0
 
-func _build_story_rewards(chapter_index: int, victory: bool = true) -> Dictionary:
-	var gold := (320 if victory else 80) + (chapter_index - 1) * 140
-	var qi_essence := (18 if victory else 6) + (chapter_index - 1) * 8
-	var spirit_stone := (1 if victory else 0) + (1 if victory and chapter_index >= 3 else 0)
+func get_story_sweep_cost(node_type: String = "battle") -> int:
+	match node_type:
+		"elite_battle":
+			return STORY_SWEEP_STAMINA_COST + 2
+		"boss_battle":
+			return STORY_SWEEP_STAMINA_COST + 4
+		_:
+			return STORY_SWEEP_STAMINA_COST
+
+func _build_story_rewards(chapter_index: int, node_type: String = "battle", victory: bool = true) -> Dictionary:
+	var mult := _story_node_multiplier(node_type)
+	var gold := int(floor(((320 if victory else 80) + (chapter_index - 1) * 140) * mult))
+	var qi_essence := int(floor(((18 if victory else 6) + (chapter_index - 1) * 8) * mult))
+	var spirit_stone := int(floor(((1 if victory else 0) + (1 if victory and chapter_index >= 3 else 0)) * mult))
 	var items: Array = []
 	if victory:
-		items.append({"id": "qi_pill_small", "quantity": 1 + int(chapter_index >= 2), "rarity": "rare"})
-		if chapter_index >= 3:
-			items.append({"id": "breakthrough_stone", "quantity": 1, "rarity": "epic"})
+		items.append({"id": "qi_pill_small", "quantity": max(1, int(floor((1 + int(chapter_index >= 2)) * mult))), "rarity": "rare"})
+		if node_type == "elite_battle":
+			items.append({"id": "stamina_pill_small", "quantity": 1, "rarity": "rare"})
+		if chapter_index >= 3 or node_type == "boss_battle":
+			items.append({"id": "breakthrough_stone", "quantity": 1 if node_type != "boss_battle" else 2, "rarity": "epic"})
 	return {
 		"gold": gold,
 		"qi_essence": qi_essence,
@@ -171,8 +189,8 @@ func _star_multiplier(stars: int) -> float:
 		_:
 			return 1.0
 
-func _scaled_story_rewards(chapter_index: int, stars: int) -> Dictionary:
-	var base := _build_story_rewards(chapter_index, true)
+func _scaled_story_rewards(chapter_index: int, stars: int, node_type: String = "battle") -> Dictionary:
+	var base := _build_story_rewards(chapter_index, node_type, true)
 	var mult := _star_multiplier(stars)
 	var scaled_items: Array = []
 	for item in base.get("items", []):
@@ -196,13 +214,14 @@ func _grant_rewards(rewards: Dictionary) -> void:
 	for item in rewards.get("items", []):
 		PlayerState.add_inventory_item(str(item.get("id", "")), int(item.get("quantity", 1)), str(item.get("rarity", "rare")))
 
-func perform_story_sweep(chapter_id: String, node_id: String, chapter_index: int, enemy_name: String) -> Dictionary:
+func perform_story_sweep(chapter_id: String, node_id: String, chapter_index: int, enemy_name: String, node_type: String = "battle") -> Dictionary:
 	if not has_completed_story_battle(node_id):
 		return {"ok": false, "text": "Сначала нужно пройти этот бой вручную"}
-	if not PlayerState.spend_stamina(STORY_SWEEP_STAMINA_COST):
+	var stamina_cost := get_story_sweep_cost(node_type)
+	if not PlayerState.spend_stamina(stamina_cost):
 		return {"ok": false, "text": "Недостаточно энергии для быстрого фарма"}
 	var stars := max(PlayerState.get_story_battle_stars(node_id), 1)
-	var rewards := _scaled_story_rewards(chapter_index, stars)
+	var rewards := _scaled_story_rewards(chapter_index, stars, node_type)
 	_grant_rewards(rewards)
 	return {
 		"ok": true,
@@ -210,25 +229,26 @@ func perform_story_sweep(chapter_id: String, node_id: String, chapter_index: int
 		"node_id": node_id,
 		"chapter_index": chapter_index,
 		"enemy_name": enemy_name,
+		"node_type": node_type,
 		"stars": stars,
-		"stamina_spent": STORY_SWEEP_STAMINA_COST,
+		"stamina_spent": stamina_cost,
 		"runs": 1,
 		"rewards": rewards,
 		"text": "Быстрый проход выполнен"
 	}
 
-func perform_multi_story_sweep(chapter_id: String, node_id: String, chapter_index: int, enemy_name: String, runs: int) -> Dictionary:
+func perform_multi_story_sweep(chapter_id: String, node_id: String, chapter_index: int, enemy_name: String, runs: int, node_type: String = "battle") -> Dictionary:
 	if runs <= 0:
 		return {"ok": false, "text": "Некорректное число проходов"}
 	if not has_completed_story_battle(node_id):
 		return {"ok": false, "text": "Сначала нужно пройти этот бой вручную"}
-	var total_cost := STORY_SWEEP_STAMINA_COST * runs
+	var total_cost := get_story_sweep_cost(node_type) * runs
 	if not PlayerState.spend_stamina(total_cost):
 		return {"ok": false, "text": "Недостаточно энергии для серии проходов"}
 	var stars := max(PlayerState.get_story_battle_stars(node_id), 1)
 	var total_rewards := {"gold": 0, "qi_essence": 0, "spirit_stone": 0, "items": []}
 	for i in range(runs):
-		var rewards := _scaled_story_rewards(chapter_index, stars)
+		var rewards := _scaled_story_rewards(chapter_index, stars, node_type)
 		total_rewards["gold"] = int(total_rewards.get("gold", 0)) + int(rewards.get("gold", 0))
 		total_rewards["qi_essence"] = int(total_rewards.get("qi_essence", 0)) + int(rewards.get("qi_essence", 0))
 		total_rewards["spirit_stone"] = int(total_rewards.get("spirit_stone", 0)) + int(rewards.get("spirit_stone", 0))
@@ -241,6 +261,7 @@ func perform_multi_story_sweep(chapter_id: String, node_id: String, chapter_inde
 		"node_id": node_id,
 		"chapter_index": chapter_index,
 		"enemy_name": enemy_name,
+		"node_type": node_type,
 		"stars": stars,
 		"stamina_spent": total_cost,
 		"runs": runs,
@@ -248,13 +269,13 @@ func perform_multi_story_sweep(chapter_id: String, node_id: String, chapter_inde
 		"text": "Серия быстрых проходов выполнена"
 	}
 
-func perform_story_auto_farm(chapter_id: String, node_id: String, chapter_index: int, enemy_name: String) -> Dictionary:
+func perform_story_auto_farm(chapter_id: String, node_id: String, chapter_index: int, enemy_name: String, node_type: String = "battle") -> Dictionary:
 	var stamina := PlayerState.refresh_stamina()
-	var available_runs := int(stamina.get("current", 0)) / STORY_SWEEP_STAMINA_COST
+	var available_runs := int(stamina.get("current", 0)) / get_story_sweep_cost(node_type)
 	available_runs = min(available_runs, 5)
 	if available_runs <= 0:
 		return {"ok": false, "text": "Недостаточно энергии для автофарма"}
-	return perform_multi_story_sweep(chapter_id, node_id, chapter_index, enemy_name, available_runs)
+	return perform_multi_story_sweep(chapter_id, node_id, chapter_index, enemy_name, available_runs, node_type)
 
 func claim_last_battle_rewards() -> Dictionary:
 	if has_claimed_battle_rewards():

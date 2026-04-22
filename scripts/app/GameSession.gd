@@ -20,6 +20,9 @@ var guild_boss_runs_used: Dictionary = {}
 var arena_runs_used: int = 0
 var season_pass_xp: int = 0
 var season_pass_claimed: Dictionary = {}
+var season_pass_mission_claimed: Dictionary = {}
+var arena_rank_reward_claimed: bool = false
+var guild_boss_tier_claimed: Dictionary = {}
 
 func initialize() -> void:
 	if is_initialized:
@@ -66,31 +69,20 @@ func _apply_weekly_reset_if_needed() -> void:
 	guild_boss_runs_used.clear()
 	season_pass_xp = 0
 	season_pass_claimed.clear()
+	season_pass_mission_claimed.clear()
+	arena_rank_reward_claimed = false
+	guild_boss_tier_claimed.clear()
 	current_weekly_key = week_key
 
 func _ensure_system_mail_generated() -> void:
 	var daily_key := "daily_supply_%s" % current_daily_key
 	if not PlayerState.has_generated_mail_key(daily_key):
-		PlayerState.add_inbox_message({
-			"id": daily_key,
-			"title": "Ежедневные припасы",
-			"from": "Небесная канцелярия",
-			"body": "Сегодняшний путь благосклонен. Забери ежедневные припасы культиватора.",
-			"claimed": false,
-			"rewards": {"gold": 1200, "bound_spirit_stone": 40, "items": [{"id": "stamina_pill_small", "quantity": 1, "rarity": "rare"}]}
-		})
+		PlayerState.add_inbox_message({"id": daily_key, "title": "Ежедневные припасы", "from": "Небесная канцелярия", "body": "Сегодняшний путь благосклонен. Забери ежедневные припасы культиватора.", "claimed": false, "rewards": {"gold": 1200, "bound_spirit_stone": 40, "items": [{"id": "stamina_pill_small", "quantity": 1, "rarity": "rare"}]}})
 		PlayerState.mark_generated_mail_key(daily_key)
 	var banner_state := get_banner_live_state("default_banner")
 	var banner_key := "banner_notice_%s_%s" % [current_daily_key, str(banner_state.get("cycle", 0))]
 	if not PlayerState.has_generated_mail_key(banner_key):
-		PlayerState.add_inbox_message({
-			"id": banner_key,
-			"title": "Сводка ротации баннера",
-			"from": "Архив духовных знамений",
-			"body": "Цикл баннера обновлён. Проверь текущую ротацию редких призывов и предложения дня.",
-			"claimed": false,
-			"rewards": {"jade": 5, "stamina": 6}
-		})
+		PlayerState.add_inbox_message({"id": banner_key, "title": "Сводка ротации баннера", "from": "Архив духовных знамений", "body": "Цикл баннера обновлён. Проверь текущую ротацию редких призывов и предложения дня.", "claimed": false, "rewards": {"jade": 5, "stamina": 6}})
 		PlayerState.mark_generated_mail_key(banner_key)
 
 func refresh_live_ops_state() -> void:
@@ -102,14 +94,7 @@ func get_daily_reset_status() -> Dictionary:
 	_apply_weekly_reset_if_needed()
 	var now := Time.get_unix_time_from_system()
 	var seconds_until_reset := 86400 - int(now % 86400)
-	return {
-		"daily_key": current_daily_key,
-		"weekly_key": current_weekly_key,
-		"seconds_until_reset": seconds_until_reset,
-		"shop_cycle": _cycle_day_index() % 3,
-		"banner_cycle": _cycle_day_index() % 2,
-		"event_cycle": _cycle_day_index() % 3
-	}
+	return {"daily_key": current_daily_key, "weekly_key": current_weekly_key, "seconds_until_reset": seconds_until_reset, "shop_cycle": _cycle_day_index() % 3, "banner_cycle": _cycle_day_index() % 2, "event_cycle": _cycle_day_index() % 3}
 
 func get_shop_offer_state(offer_id: String) -> Dictionary:
 	var live_ops := get_daily_reset_status()
@@ -168,7 +153,8 @@ func get_guild_boss_state() -> Dictionary:
 	var boss_id := "guild_boss_%d" % cycle
 	var used := int(guild_boss_runs_used.get(boss_id, 0))
 	var progress := min(used * 35, 100)
-	return {"boss_id": boss_id, "cycle": cycle, "name": boss_names[min(cycle, boss_names.size() - 1)], "max_runs": GUILD_BOSS_MAX_RUNS_PER_WEEK, "used_runs": used, "remaining_runs": max(GUILD_BOSS_MAX_RUNS_PER_WEEK - used, 0), "stamina_cost": GUILD_BOSS_STAMINA_COST, "progress": progress, "boss_ready": true}
+	var contribution_score := used * 120
+	return {"boss_id": boss_id, "cycle": cycle, "name": boss_names[min(cycle, boss_names.size() - 1)], "max_runs": GUILD_BOSS_MAX_RUNS_PER_WEEK, "used_runs": used, "remaining_runs": max(GUILD_BOSS_MAX_RUNS_PER_WEEK - used, 0), "stamina_cost": GUILD_BOSS_STAMINA_COST, "progress": progress, "boss_ready": true, "contribution_score": contribution_score}
 
 func begin_guild_boss_run() -> Dictionary:
 	var state := get_guild_boss_state()
@@ -190,6 +176,31 @@ func get_guild_boss_rewards(victory: bool) -> Dictionary:
 		items.append({"id": "stamina_pill_small", "quantity": 1, "rarity": "rare"})
 	return {"gold": 1400 + cycle * 420, "qi_essence": 120 + cycle * 30, "spirit_stone": 4 + cycle, "jade": 10 + cycle * 3, "items": items}
 
+func get_guild_boss_contribution_tiers() -> Array:
+	var score := int(get_guild_boss_state().get("contribution_score", 0))
+	return [
+		{"id": "bronze", "target": 120, "claimed": bool(guild_boss_tier_claimed.get("bronze", false)), "reward": {"gold": 400, "jade": 2, "bound_spirit_stone": 25}, "reached": score >= 120},
+		{"id": "silver", "target": 240, "claimed": bool(guild_boss_tier_claimed.get("silver", false)), "reward": {"gold": 700, "jade": 4, "bound_spirit_stone": 40}, "reached": score >= 240},
+		{"id": "gold", "target": 360, "claimed": bool(guild_boss_tier_claimed.get("gold", false)), "reward": {"gold": 1100, "jade": 6, "bound_spirit_stone": 65}, "reached": score >= 360}
+	]
+
+func claim_guild_boss_contribution_tier(tier_id: String) -> Dictionary:
+	for tier in get_guild_boss_contribution_tiers():
+		if str(tier.get("id", "")) != tier_id:
+			continue
+		if not bool(tier.get("reached", false)):
+			return {"ok": false, "text": "Порог вклада ещё не достигнут"}
+		if bool(tier.get("claimed", false)):
+			return {"ok": false, "text": "Награда tier уже получена"}
+		var reward := tier.get("reward", {})
+		PlayerState.add_currency("gold", int(reward.get("gold", 0)))
+		PlayerState.add_currency("jade", int(reward.get("jade", 0)))
+		PlayerState.add_currency("bound_spirit_stone", int(reward.get("bound_spirit_stone", 0)))
+		guild_boss_tier_claimed[tier_id] = true
+		award_season_pass_xp(20, "guild_boss_tier")
+		return {"ok": true, "tier_id": tier_id, "reward": reward, "text": "Награда за вклад в босса ордена получена"}
+	return {"ok": false, "text": "Tier не найден"}
+
 func get_arena_state() -> Dictionary:
 	_apply_daily_reset_if_needed()
 	var power := PlayerState.get_power()
@@ -198,7 +209,8 @@ func get_arena_state() -> Dictionary:
 		{"name": "Тень Нефритовой Башни", "power": power + 90, "rank": 103},
 		{"name": "Копьё Небесной Пыли", "power": power + 260, "rank": 87}
 	]
-	return {"remaining_runs": max(ARENA_MAX_RUNS_PER_DAY - arena_runs_used, 0), "max_runs": ARENA_MAX_RUNS_PER_DAY, "opponents": opponents, "season_rating": 1200 + arena_runs_used * 18}
+	var rating := 1200 + arena_runs_used * 18
+	return {"remaining_runs": max(ARENA_MAX_RUNS_PER_DAY - arena_runs_used, 0), "max_runs": ARENA_MAX_RUNS_PER_DAY, "opponents": opponents, "season_rating": rating, "league": "Нефрит" if rating >= 1260 else "Бронза"}
 
 func begin_arena_run(opponent_index: int) -> Dictionary:
 	var state := get_arena_state()
@@ -215,6 +227,26 @@ func get_arena_rewards(victory: bool) -> Dictionary:
 		return {"gold": 150, "qi_essence": 12, "spirit_stone": 0, "jade": 1, "items": []}
 	return {"gold": 520, "qi_essence": 42, "spirit_stone": 1, "jade": 4, "items": [{"id": "qi_pill_small", "quantity": 1, "rarity": "rare"}]}
 
+func get_arena_rank_reward_preview() -> Dictionary:
+	var state := get_arena_state()
+	var rating := int(state.get("season_rating", 1200))
+	if rating >= 1280:
+		return {"tier": "top_jade", "gold": 1200, "jade": 12, "bound_spirit_stone": 80}
+	if rating >= 1240:
+		return {"tier": "jade", "gold": 800, "jade": 8, "bound_spirit_stone": 55}
+	return {"tier": "bronze", "gold": 450, "jade": 4, "bound_spirit_stone": 30}
+
+func claim_arena_rank_reward() -> Dictionary:
+	if arena_rank_reward_claimed:
+		return {"ok": false, "text": "Season reward арены уже получен"}
+	var reward := get_arena_rank_reward_preview()
+	PlayerState.add_currency("gold", int(reward.get("gold", 0)))
+	PlayerState.add_currency("jade", int(reward.get("jade", 0)))
+	PlayerState.add_currency("bound_spirit_stone", int(reward.get("bound_spirit_stone", 0)))
+	arena_rank_reward_claimed = true
+	award_season_pass_xp(18, "arena_rank")
+	return {"ok": true, "reward": reward, "text": "Награда за рейтинг арены получена"}
+
 func award_season_pass_xp(amount: int, source: String = "activity") -> Dictionary:
 	if amount <= 0:
 		return get_season_pass_state()
@@ -225,10 +257,33 @@ func get_season_pass_state() -> Dictionary:
 	_apply_weekly_reset_if_needed()
 	var level := min(int(floor(float(season_pass_xp) / float(SEASON_PASS_XP_PER_LEVEL))) + 1, SEASON_PASS_MAX_LEVEL)
 	var xp_in_level := season_pass_xp % SEASON_PASS_XP_PER_LEVEL
-	return {"level": level, "xp_total": season_pass_xp, "xp_in_level": xp_in_level, "xp_needed": SEASON_PASS_XP_PER_LEVEL, "max_level": SEASON_PASS_MAX_LEVEL, "claimed": season_pass_claimed}
+	return {"level": level, "xp_total": season_pass_xp, "xp_in_level": xp_in_level, "xp_needed": SEASON_PASS_XP_PER_LEVEL, "max_level": SEASON_PASS_MAX_LEVEL, "claimed": season_pass_claimed, "mission_claimed": season_pass_mission_claimed}
 
 func get_season_pass_reward_preview(level: int) -> Dictionary:
 	return {"gold": 300 + level * 40, "jade": 2 + int(level / 5), "bound_spirit_stone": 20 + level * 3}
+
+func get_season_pass_missions() -> Array:
+	var event_runs := int(get_event_dungeon_state().get("used_runs", 0))
+	var arena_used := arena_runs_used
+	var guild_used := int(get_guild_boss_state().get("used_runs", 0))
+	return [
+		{"id": "pass_event", "title": "Пройди подземелье события 1 раз", "progress": min(event_runs, 1), "target": 1, "xp": 25, "claimed": bool(season_pass_mission_claimed.get("pass_event", false))},
+		{"id": "pass_arena", "title": "Проведи 2 дуэли на арене", "progress": min(arena_used, 2), "target": 2, "xp": 30, "claimed": bool(season_pass_mission_claimed.get("pass_arena", false))},
+		{"id": "pass_guild", "title": "Атакуй босса ордена 1 раз", "progress": min(guild_used, 1), "target": 1, "xp": 35, "claimed": bool(season_pass_mission_claimed.get("pass_guild", false))}
+	]
+
+func claim_season_pass_mission(mission_id: String) -> Dictionary:
+	for mission in get_season_pass_missions():
+		if str(mission.get("id", "")) != mission_id:
+			continue
+		if bool(mission.get("claimed", false)):
+			return {"ok": false, "text": "Season mission уже получена"}
+		if int(mission.get("progress", 0)) < int(mission.get("target", 1)):
+			return {"ok": false, "text": "Цель season mission ещё не выполнена"}
+		season_pass_mission_claimed[mission_id] = true
+		award_season_pass_xp(int(mission.get("xp", 0)), "season_mission")
+		return {"ok": true, "mission_id": mission_id, "xp": int(mission.get("xp", 0)), "text": "Season mission зачтена"}
+	return {"ok": false, "text": "Season mission не найдена"}
 
 func claim_season_pass_reward(level: int) -> Dictionary:
 	var pass_state := get_season_pass_state()

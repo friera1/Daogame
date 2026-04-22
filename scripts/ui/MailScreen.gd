@@ -22,6 +22,14 @@ func _load_mailbox() -> void:
 	if typeof(mailbox) != TYPE_DICTIONARY:
 		mailbox = {"messages": []}
 
+func _all_messages() -> Array:
+	var messages: Array = []
+	for message in mailbox.get("messages", []):
+		messages.append(message)
+	for message in PlayerState.get_inbox_messages():
+		messages.append(message)
+	return messages
+
 func _is_claimed(message: Dictionary) -> bool:
 	var message_id := str(message.get("id", ""))
 	return bool(message.get("claimed", false)) or PlayerState.has_claimed_mail(message_id)
@@ -52,11 +60,12 @@ func _apply_rewards(rewards: Dictionary) -> void:
 func _refresh() -> void:
 	for child in mail_list.get_children():
 		child.queue_free()
+	var messages := _all_messages()
 	var claimed_count := 0
-	for message in mailbox.get("messages", []):
+	for message in messages:
 		if _is_claimed(message):
 			claimed_count += 1
-	for message in mailbox.get("messages", []):
+	for message in messages:
 		var msg_id := str(message.get("id", ""))
 		var card := PanelContainer.new()
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -77,31 +86,43 @@ func _refresh() -> void:
 		var open_button := Button.new()
 		open_button.text = "Открыть"
 		open_button.icon = IconLoader.get_skill_icon("jade_guard")
-		UITheme.apply_accent_button(open_button, claimed)
+		UITheme.apply_accent_button(open_button, false)
 		open_button.pressed.connect(_open_message.bind(msg_id))
+		var claim_button := Button.new()
+		claim_button.text = "Получено" if claimed else "Забрать"
+		claim_button.icon = IconLoader.get_currency_icon("jade")
+		UITheme.apply_accent_button(claim_button, true)
+		claim_button.disabled = claimed
+		claim_button.pressed.connect(_claim_by_id.bind(msg_id))
 		row.add_child(icon)
 		row.add_child(label)
 		row.add_child(open_button)
+		row.add_child(claim_button)
 		mail_list.add_child(card)
-	if mailbox.get("messages", []).size() > 0:
-		detail_label.text = "Писем: %d · Получено: %d" % [mailbox.get("messages", []).size(), claimed_count]
-		_open_message(str(mailbox.get("messages", [])[0].get("id", "")))
+	if messages.size() > 0:
+		detail_label.text = "Писем: %d · Получено: %d" % [messages.size(), claimed_count]
+		_open_message(str(messages[0].get("id", "")))
+
+func _find_message(message_id: String) -> Dictionary:
+	for message in _all_messages():
+		if str(message.get("id", "")) == message_id:
+			return message
+	return {}
 
 func _open_message(message_id: String) -> void:
-	for message in mailbox.get("messages", []):
-		if str(message.get("id", "")) != message_id:
-			continue
-		var rewards := message.get("rewards", {})
-		var claimed := _is_claimed(message)
-		var badge := "[ПОЛУЧЕНО]" if claimed else "[НОВОЕ]"
-		detail_label.text = "%s [b]%s[/b]\nОт: %s\n\n%s\n\nНаграды: %s" % [
-			badge,
-			str(message.get("title", "Письмо")),
-			str(message.get("from", "Система")),
-			str(message.get("body", "")),
-			_reward_summary(rewards)
-		]
+	var message := _find_message(message_id)
+	if message.is_empty():
 		return
+	var rewards := message.get("rewards", {})
+	var claimed := _is_claimed(message)
+	var badge := "[ПОЛУЧЕНО]" if claimed else "[НОВОЕ]"
+	detail_label.text = "%s [b]%s[/b]\nОт: %s\n\n%s\n\nНаграды: %s" % [
+		badge,
+		str(message.get("title", "Письмо")),
+		str(message.get("from", "Система")),
+		str(message.get("body", "")),
+		_reward_summary(rewards)
+	]
 
 func _claim_message(message: Dictionary) -> bool:
 	var message_id := str(message.get("id", ""))
@@ -113,9 +134,19 @@ func _claim_message(message: Dictionary) -> bool:
 	OnlineSyncService.queue_action("mail_claim", {"message_id": message_id, "rewards": rewards})
 	return true
 
+func _claim_by_id(message_id: String) -> void:
+	var message := _find_message(message_id)
+	if message.is_empty():
+		return
+	if _claim_message(message):
+		detail_label.text = "[b]Письмо получено[/b]\n\n%s" % _reward_summary(message.get("rewards", {}))
+	else:
+		detail_label.text = "[b]Награда уже получена[/b]"
+	_refresh()
+
 func _claim_all_pressed() -> void:
 	var changed := false
-	for message in mailbox.get("messages", []):
+	for message in _all_messages():
 		if _claim_message(message):
 			changed = true
 	if changed:

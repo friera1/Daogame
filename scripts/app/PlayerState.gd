@@ -16,6 +16,7 @@ signal mailbox_changed
 
 const MAILBOX_CAP := 40
 const DEFAULT_MAIL_LIFETIME_SEC := 604800
+const EQUIPMENT_ENHANCE_MAX := 15
 
 var profile: Dictionary = {}
 
@@ -79,6 +80,8 @@ func _ensure_profile_defaults() -> void:
 		if not mailbox.has("inbox_messages"):
 			mailbox["inbox_messages"] = []
 		profile["mailbox_progress"] = mailbox
+	if not profile.has("equipment_enhancement"):
+		profile["equipment_enhancement"] = {}
 	_prune_inbox_messages(false)
 
 func save_profile() -> void:
@@ -110,6 +113,12 @@ func get_cultivation() -> Dictionary:
 
 func get_equipment() -> Dictionary:
 	return profile.get("equipment", {})
+
+func get_equipment_enhancement() -> Dictionary:
+	return profile.get("equipment_enhancement", {})
+
+func get_equipment_enhance_level(slot_id: String) -> int:
+	return int(get_equipment_enhancement().get(slot_id, 0))
 
 func get_tutorial() -> Dictionary:
 	return profile.get("tutorial", {"completed": false, "step_index": 0})
@@ -364,6 +373,44 @@ func equip_item(slot_id: String, item_id: String) -> void:
 	profile["equipment"] = equipment
 	save_profile()
 	emit_signal("equipment_changed")
+
+func get_equipment_enhance_cost(slot_id: String) -> Dictionary:
+	var next_level := get_equipment_enhance_level(slot_id) + 1
+	return {
+		"gold": 300 + next_level * 180,
+		"bound_spirit_stone": 12 + next_level * 6
+	}
+
+func enhance_equipment(slot_id: String) -> Dictionary:
+	var equipped_item := str(get_equipment().get(slot_id, "none"))
+	if equipped_item == "none":
+		return {"ok": false, "text": "Сначала нужно экипировать предмет"}
+	var current_level := get_equipment_enhance_level(slot_id)
+	if current_level >= EQUIPMENT_ENHANCE_MAX:
+		return {"ok": false, "text": "Достигнут максимум усиления"}
+	var cost := get_equipment_enhance_cost(slot_id)
+	if not spend_currency("gold", int(cost.get("gold", 0))):
+		return {"ok": false, "text": "Недостаточно золота"}
+	if not spend_currency("bound_spirit_stone", int(cost.get("bound_spirit_stone", 0))):
+		add_currency("gold", int(cost.get("gold", 0)))
+		return {"ok": false, "text": "Недостаточно связанных духовных камней"}
+	var enhancement := get_equipment_enhancement()
+	enhancement[slot_id] = current_level + 1
+	profile["equipment_enhancement"] = enhancement
+	var power_gain := 18 + (current_level + 1) * 6
+	profile["combat_power"] = get_power() + power_gain
+	save_profile()
+	emit_signal("equipment_changed")
+	emit_signal("player_loaded")
+	return {
+		"ok": true,
+		"slot_id": slot_id,
+		"item_id": equipped_item,
+		"new_level": current_level + 1,
+		"power_gain": power_gain,
+		"cost": cost,
+		"text": "%s усилен до +%d" % [slot_id, current_level + 1]
+	}
 
 func refine_body() -> void:
 	var cult := get_cultivation()

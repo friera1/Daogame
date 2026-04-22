@@ -48,8 +48,20 @@ func _ensure_profile_defaults() -> void:
 		profile["story_progress"] = {
 			"unlocked_chapters": {"chapter_01": true},
 			"completed_battles": {},
+			"battle_stars": {},
 			"claimed_rewards": {}
 		}
+	else:
+		var story_progress := profile.get("story_progress", {})
+		if not story_progress.has("unlocked_chapters"):
+			story_progress["unlocked_chapters"] = {"chapter_01": true}
+		if not story_progress.has("completed_battles"):
+			story_progress["completed_battles"] = {}
+		if not story_progress.has("battle_stars"):
+			story_progress["battle_stars"] = {}
+		if not story_progress.has("claimed_rewards"):
+			story_progress["claimed_rewards"] = {}
+		profile["story_progress"] = story_progress
 	if not profile.has("summon_progress"):
 		profile["summon_progress"] = {}
 	if not profile.has("attendance_progress"):
@@ -166,10 +178,7 @@ func _prune_inbox_messages(keep_latest: bool) -> void:
 	if filtered.size() > MAILBOX_CAP:
 		filtered.sort_custom(func(a, b): return int(a.get("created_at", 0)) < int(b.get("created_at", 0)))
 		while filtered.size() > MAILBOX_CAP:
-			if keep_latest:
-				filtered.remove_at(0)
-			else:
-				filtered.remove_at(0)
+			filtered.remove_at(0)
 	mailbox_progress["inbox_messages"] = filtered
 	profile["mailbox_progress"] = mailbox_progress
 
@@ -302,11 +311,23 @@ func unlock_story_chapter(chapter_id: String) -> void:
 func has_completed_story_battle(node_id: String) -> bool:
 	return bool(get_story_progress().get("completed_battles", {}).get(node_id, false))
 
+func get_story_battle_stars(node_id: String) -> int:
+	return int(get_story_progress().get("battle_stars", {}).get(node_id, 0))
+
 func mark_story_battle_completed(node_id: String) -> void:
 	var story_progress := get_story_progress()
 	var completed := story_progress.get("completed_battles", {})
 	completed[node_id] = true
 	story_progress["completed_battles"] = completed
+	profile["story_progress"] = story_progress
+	save_profile()
+	emit_signal("story_progress_changed")
+
+func set_story_battle_stars(node_id: String, stars: int) -> void:
+	var story_progress := get_story_progress()
+	var battle_stars := story_progress.get("battle_stars", {})
+	battle_stars[node_id] = max(int(battle_stars.get(node_id, 0)), clamp(stars, 0, 3))
+	story_progress["battle_stars"] = battle_stars
 	profile["story_progress"] = story_progress
 	save_profile()
 	emit_signal("story_progress_changed")

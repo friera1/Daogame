@@ -1,6 +1,7 @@
 extends Control
 
 const BATTLE_BG_PATH := "res://assets/art/generated/battle_background_primary.png"
+const BATTLE_STAMINA_COST := 6
 
 @onready var player_name: Label = %PlayerName
 @onready var player_hp: Label = %PlayerHP
@@ -23,6 +24,13 @@ func _ready() -> void:
 	_apply_art()
 	player_name.text = PlayerState.get_name()
 	enemy_name.text = str(battle_context.get("enemy_name", "Страж духовных руин"))
+	if not PlayerState.spend_stamina(BATTLE_STAMINA_COST):
+		_append_log("Недостаточно энергии: нужно %d" % BATTLE_STAMINA_COST)
+		_disable_skills()
+		await get_tree().create_timer(1.2).timeout
+		SceneRouter.goto_scene("res://scenes/lobby/LobbyScreen.tscn")
+		return
+	_append_log("Потрачено энергии: %d" % BATTLE_STAMINA_COST)
 	_apply_context_scaling()
 	_append_log("Бой начался")
 	_refresh()

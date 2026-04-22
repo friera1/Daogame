@@ -1,5 +1,7 @@
 extends Node
 
+const STORY_SWEEP_STAMINA_COST := 4
+
 var is_initialized: bool = false
 var last_battle_result: Dictionary = {}
 var claimed_daily_missions: Dictionary = {}
@@ -140,16 +142,55 @@ func _next_chapter_id(chapter_id: String) -> String:
 			return str(chapters[i + 1].get("id", ""))
 	return ""
 
+func get_story_sweep_cost() -> int:
+	return STORY_SWEEP_STAMINA_COST
+
+func _build_story_rewards(chapter_index: int, victory: bool = true) -> Dictionary:
+	var gold := (320 if victory else 80) + (chapter_index - 1) * 140
+	var qi_essence := (18 if victory else 6) + (chapter_index - 1) * 8
+	var spirit_stone := (1 if victory else 0) + (1 if victory and chapter_index >= 3 else 0)
+	var items: Array = []
+	if victory:
+		items.append({"id": "qi_pill_small", "quantity": 1 + int(chapter_index >= 2), "rarity": "rare"})
+		if chapter_index >= 3:
+			items.append({"id": "breakthrough_stone", "quantity": 1, "rarity": "epic"})
+	return {
+		"gold": gold,
+		"qi_essence": qi_essence,
+		"spirit_stone": spirit_stone,
+		"items": items
+	}
+
+func _grant_rewards(rewards: Dictionary) -> void:
+	PlayerState.add_currency("gold", int(rewards.get("gold", 0)))
+	PlayerState.add_currency("bound_spirit_stone", int(rewards.get("qi_essence", 0)))
+	PlayerState.add_currency("spirit_stone", int(rewards.get("spirit_stone", 0)))
+	for item in rewards.get("items", []):
+		PlayerState.add_inventory_item(str(item.get("id", "")), int(item.get("quantity", 1)), str(item.get("rarity", "rare")))
+
+func perform_story_sweep(chapter_id: String, node_id: String, chapter_index: int, enemy_name: String) -> Dictionary:
+	if not has_completed_story_battle(node_id):
+		return {"ok": false, "text": "Сначала нужно пройти этот бой вручную"}
+	if not PlayerState.spend_stamina(STORY_SWEEP_STAMINA_COST):
+		return {"ok": false, "text": "Недостаточно энергии для быстрого фарма"}
+	var rewards := _build_story_rewards(chapter_index, true)
+	_grant_rewards(rewards)
+	return {
+		"ok": true,
+		"chapter_id": chapter_id,
+		"node_id": node_id,
+		"chapter_index": chapter_index,
+		"enemy_name": enemy_name,
+		"stamina_spent": STORY_SWEEP_STAMINA_COST,
+		"rewards": rewards,
+		"text": "Быстрый проход выполнен"
+	}
+
 func claim_last_battle_rewards() -> Dictionary:
 	if has_claimed_battle_rewards():
 		return last_battle_result.get("rewards", {})
 	var rewards := last_battle_result.get("rewards", {})
-	PlayerState.add_currency("gold", int(rewards.get("gold", 0)))
-	PlayerState.add_currency("bound_spirit_stone", int(rewards.get("qi_essence", 0)))
-	PlayerState.add_currency("spirit_stone", int(rewards.get("spirit_stone", 0)))
-	var items := rewards.get("items", [])
-	for item in items:
-		PlayerState.add_inventory_item(str(item.get("id", "")), int(item.get("quantity", 1)), str(item.get("rarity", "rare")))
+	_grant_rewards(rewards)
 	if bool(last_battle_result.get("victory", false)):
 		var context := last_battle_result.get("context", {})
 		if str(context.get("source", "")) == "story":

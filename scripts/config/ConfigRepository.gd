@@ -2,6 +2,8 @@ extends Node
 
 var stages: Dictionary = {}
 var items: Dictionary = {}
+var item_rarities: Dictionary = {}
+var crafting_recipes: Dictionary = {}
 var skills: Dictionary = {}
 var idle: Dictionary = {}
 var pets: Dictionary = {}
@@ -14,6 +16,8 @@ var tutorial: Dictionary = {}
 func load_all() -> void:
 	stages = _load_json("res://data/configs/stages.json")
 	items = _load_json("res://data/configs/item_defs.json")
+	item_rarities = _load_json("res://data/configs/item_rarities.json")
+	crafting_recipes = _load_json("res://data/configs/crafting_recipes.json")
 	skills = _load_json("res://data/configs/skill_defs.json")
 	idle = _load_json("res://data/configs/idle_reward_tables.json")
 	pets = _load_json("res://data/configs/pet_defs.json")
@@ -40,6 +44,18 @@ func get_stage_name(stage_id: String) -> String:
 			return str(stage.get("name", stage_id))
 	return stage_id
 
+func get_stage_index(stage_id: String) -> int:
+	var stage_list := stages.get("stages", [])
+	for i in range(stage_list.size()):
+		if str(stage_list[i].get("id", "")) == stage_id:
+			return i
+	return -1
+
+func is_stage_requirement_met(required_stage_id: String, current_stage_id: String) -> bool:
+	if required_stage_id == "":
+		return true
+	return get_stage_index(current_stage_id) >= get_stage_index(required_stage_id)
+
 func get_item_def(item_id: String) -> Dictionary:
 	for item in items.get("items", []):
 		if str(item.get("id", "")) == item_id:
@@ -49,6 +65,36 @@ func get_item_def(item_id: String) -> Dictionary:
 func get_item_name(item_id: String) -> String:
 	var item := get_item_def(item_id)
 	return str(item.get("name", item_id))
+
+func get_rarity_def(rarity_id: String) -> Dictionary:
+	for rarity in item_rarities.get("rarities", []):
+		if str(rarity.get("id", "")) == rarity_id:
+			return rarity
+	return {}
+
+func get_rarity_name(rarity_id: String) -> String:
+	var rarity := get_rarity_def(rarity_id)
+	return str(rarity.get("name", rarity_id))
+
+func get_recipe_def(recipe_id: String) -> Dictionary:
+	for recipe in crafting_recipes.get("recipes", []):
+		if str(recipe.get("id", "")) == recipe_id:
+			return recipe
+	return {}
+
+func get_recipe_name(recipe_id: String) -> String:
+	var recipe := get_recipe_def(recipe_id)
+	return str(recipe.get("name", recipe_id))
+
+func get_available_recipes(current_stage_id: String, player_level: int) -> Array:
+	var result: Array = []
+	for recipe in crafting_recipes.get("recipes", []):
+		if not is_stage_requirement_met(str(recipe.get("qi_stage_required", "")), current_stage_id):
+			continue
+		if player_level < int(recipe.get("player_level_required", 1)):
+			continue
+		result.append(recipe)
+	return result
 
 func get_skill_def(skill_id: String) -> Dictionary:
 	for skill in skills.get("skills", []):

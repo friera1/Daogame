@@ -5,6 +5,8 @@ var last_battle_result: Dictionary = {}
 var claimed_story_rewards: Dictionary = {}
 var claimed_daily_missions: Dictionary = {}
 var pending_battle_context: Dictionary = {}
+var completed_story_battles: Dictionary = {}
+var unlocked_story_chapters: Dictionary = {"chapter_01": true}
 
 func initialize() -> void:
 	if is_initialized:
@@ -38,6 +40,25 @@ func clear_battle_context() -> void:
 func has_claimed_battle_rewards() -> bool:
 	return bool(last_battle_result.get("claimed", false))
 
+func has_completed_story_battle(node_id: String) -> bool:
+	return bool(completed_story_battles.get(node_id, false))
+
+func is_story_chapter_unlocked(chapter_id: String) -> bool:
+	return bool(unlocked_story_chapters.get(chapter_id, false))
+
+func mark_story_battle_completed(node_id: String, chapter_id: String) -> void:
+	completed_story_battles[node_id] = true
+	var next_id := _next_chapter_id(chapter_id)
+	if not next_id.is_empty():
+		unlocked_story_chapters[next_id] = true
+
+func _next_chapter_id(chapter_id: String) -> String:
+	var chapters := ConfigRepository.story.get("chapters", [])
+	for i in range(chapters.size()):
+		if str(chapters[i].get("id", "")) == chapter_id and i + 1 < chapters.size():
+			return str(chapters[i + 1].get("id", ""))
+	return ""
+
 func claim_last_battle_rewards() -> Dictionary:
 	if has_claimed_battle_rewards():
 		return last_battle_result.get("rewards", {})
@@ -48,5 +69,9 @@ func claim_last_battle_rewards() -> Dictionary:
 	var items := rewards.get("items", [])
 	for item in items:
 		PlayerState.add_inventory_item(str(item.get("id", "")), int(item.get("quantity", 1)), str(item.get("rarity", "rare")))
+	if bool(last_battle_result.get("victory", false)):
+		var context := last_battle_result.get("context", {})
+		if str(context.get("source", "")) == "story":
+			mark_story_battle_completed(str(context.get("node_id", "")), str(context.get("chapter_id", "")))
 	last_battle_result["claimed"] = true
 	return rewards

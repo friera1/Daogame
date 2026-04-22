@@ -20,6 +20,7 @@ func _ready() -> void:
 	breakthrough_button.icon = IconLoader.get_item_icon("breakthrough_stone")
 	_refresh()
 	PlayerState.cultivation_changed.connect(_refresh)
+	PlayerState.inventory_changed.connect(_refresh)
 
 func _apply_art() -> void:
 	var art := ArtLoader.load_texture_safe(CULTIVATION_BG_PATH)
@@ -29,15 +30,31 @@ func _apply_art() -> void:
 
 func _refresh() -> void:
 	var cult := PlayerState.get_cultivation()
-	stage_label.text = ConfigRepository.get_stage_name(str(cult.get("current_stage_id", "")))
+	var stage_id := str(cult.get("current_stage_id", ""))
+	stage_label.text = "%s %s" % ["[ГОТОВ]" if bool(cult.get("breakthrough_ready", false)) else "[ПУТЬ]", ConfigRepository.get_stage_name(stage_id)]
 	qi_label.text = "Ци: %d / %d" % [int(cult.get("qi_exp", 0)), int(cult.get("qi_exp_required", 1))]
 	body_label.text = "Тело: %d" % int(cult.get("body_refinement_level", 0))
 	spirit_label.text = "Дух: %d" % int(cult.get("spirit_refinement_level", 0))
 	dao_label.text = "Дао-сердце: %d" % int(cult.get("dao_heart_level", 0))
 	var ready := bool(cult.get("breakthrough_ready", false))
-	status_label.text = "Прорыв готов" if ready else "Нужна дальнейшая культивация"
-	status_label.modulate = UITheme.COLOR_SUCCESS if ready else UITheme.COLOR_TEXT
-	breakthrough_button.disabled = not ready
+	var has_stone := _has_breakthrough_stone()
+	if ready and has_stone:
+		status_label.text = "Прорыв готов · Камень прорыва найден"
+		status_label.modulate = UITheme.COLOR_SUCCESS
+	elif ready:
+		status_label.text = "Прорыв готов, но нужен Камень прорыва"
+		status_label.modulate = UITheme.COLOR_GOLD
+	else:
+		status_label.text = "Нужна дальнейшая культивация"
+		status_label.modulate = UITheme.COLOR_TEXT
+	breakthrough_button.disabled = not (ready and has_stone)
+	breakthrough_button.text = "Прорыв" if has_stone else "Нужен камень"
+
+func _has_breakthrough_stone() -> bool:
+	for entry in PlayerState.get_inventory():
+		if str(entry.get("item_id", "")) == "breakthrough_stone" and int(entry.get("quantity", 0)) > 0:
+			return true
+	return false
 
 func _on_back_pressed() -> void:
 	SceneRouter.goto_scene("res://scenes/lobby/LobbyScreen.tscn")
@@ -52,8 +69,9 @@ func _on_cultivate_pressed() -> void:
 	status_label.modulate = UITheme.COLOR_SUCCESS
 
 func _on_breakthrough_pressed() -> void:
-	status_label.text = "Безопасный прорыв будет следующим шагом vertical slice"
-	status_label.modulate = UITheme.COLOR_GOLD
+	var result_text := PlayerState.perform_breakthrough()
+	status_label.text = result_text
+	status_label.modulate = UITheme.COLOR_SUCCESS if result_text.begins_with("Прорыв успешен") else UITheme.COLOR_GOLD
 
 func _on_body_pressed() -> void:
 	PlayerState.refine_body()

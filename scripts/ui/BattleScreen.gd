@@ -55,10 +55,12 @@ func _disable_skills() -> void:
 func _finalize_battle(victory: bool) -> void:
 	GameSession.last_battle_result = {
 		"victory": victory,
+		"claimed": false,
 		"rewards": {
 			"gold": 320 if victory else 80,
 			"qi_essence": 18 if victory else 6,
 			"spirit_stone": 1 if victory else 0,
+			"items": [{"id": "qi_pill_small", "quantity": 1, "rarity": "rare"}] if victory else []
 		}
 	}
 	await get_tree().create_timer(1.0).timeout

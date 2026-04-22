@@ -4,6 +4,7 @@ var is_initialized: bool = false
 var last_battle_result: Dictionary = {}
 var claimed_story_rewards: Dictionary = {}
 var claimed_daily_missions: Dictionary = {}
+var pending_battle_context: Dictionary = {}
 
 func initialize() -> void:
 	if is_initialized:
@@ -24,6 +25,15 @@ func has_claimed_daily_mission(mission_id: String) -> bool:
 
 func mark_daily_mission_claimed(mission_id: String) -> void:
 	claimed_daily_missions[mission_id] = true
+
+func set_battle_context(context: Dictionary) -> void:
+	pending_battle_context = context
+
+func get_battle_context() -> Dictionary:
+	return pending_battle_context
+
+func clear_battle_context() -> void:
+	pending_battle_context = {}
 
 func has_claimed_battle_rewards() -> bool:
 	return bool(last_battle_result.get("claimed", false))

@@ -24,15 +24,20 @@ func _refresh_chapters() -> void:
 				reward_total += 1
 				if GameSession.has_claimed_story_reward(str(node.get("id", ""))):
 					claimed_total += 1
-		var chapter_badge := "[%d/%d]" % [claimed_total, reward_total]
+		var unlocked := GameSession.is_story_chapter_unlocked(chapter_id)
+		var chapter_badge := "[LOCK]" if not unlocked else "[%d/%d]" % [claimed_total, reward_total]
 		var button := Button.new()
 		button.text = "%s %s" % [chapter_badge, str(chapter.get("name", chapter_id))]
 		button.icon = IconLoader.get_icon("story_marker")
-		UITheme.apply_accent_button(button, claimed_total == reward_total and reward_total > 0)
+		UITheme.apply_accent_button(button, unlocked and claimed_total == reward_total and reward_total > 0)
+		button.disabled = not unlocked
 		button.pressed.connect(_show_chapter.bind(chapter_id))
 		chapter_list.add_child(button)
-	if ConfigRepository.story.get("chapters", []).size() > 0:
-		_show_chapter(str(ConfigRepository.story.get("chapters", [])[0].get("id", "")))
+	for chapter in ConfigRepository.story.get("chapters", []):
+		var chapter_id := str(chapter.get("id", ""))
+		if GameSession.is_story_chapter_unlocked(chapter_id):
+			_show_chapter(chapter_id)
+			break
 
 func _show_chapter(chapter_id: String) -> void:
 	for child in node_list.get_children():
@@ -45,10 +50,13 @@ func _show_chapter(chapter_id: String) -> void:
 			var node_id := str(node.get("id", ""))
 			var node_type := str(node.get("type", "node"))
 			var claimed := node_type == "reward" and GameSession.has_claimed_story_reward(node_id)
-			var badge := _node_badge(node_type, claimed)
+			var battle_done := node_type == "battle" and GameSession.has_completed_story_battle(node_id)
+			var badge := _node_badge(node_type, claimed, battle_done)
 			var card := PanelContainer.new()
 			card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			var border := UITheme.COLOR_GOLD_DARK if node_type == "reward" else UITheme.COLOR_JADE_DARK
+			if battle_done:
+				border = UITheme.COLOR_SUCCESS
 			UITheme.apply_card(card, border)
 			var row := HBoxContainer.new()
 			row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -62,9 +70,9 @@ func _show_chapter(chapter_id: String) -> void:
 			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			label.text = "%s %s" % [badge, str(node.get("title", "Узел"))]
 			var action := Button.new()
-			action.text = "Получено" if claimed else "Открыть"
-			UITheme.apply_accent_button(action, node_type == "reward")
-			action.disabled = claimed
+			action.text = _node_action_text(node_type, claimed, battle_done)
+			UITheme.apply_accent_button(action, node_type == "reward" or battle_done)
+			action.disabled = claimed or battle_done
 			action.pressed.connect(_open_node.bind(node, chapter_id))
 			row.add_child(icon)
 			row.add_child(label)
@@ -72,12 +80,19 @@ func _show_chapter(chapter_id: String) -> void:
 			node_list.add_child(card)
 		return
 
-func _node_badge(node_type: String, claimed: bool) -> String:
+func _node_badge(node_type: String, claimed: bool, battle_done: bool) -> String:
 	if node_type == "reward":
 		return "[ЗАБРАНО]" if claimed else "[НАГРАДА]"
 	if node_type == "battle":
-		return "[БОЙ]"
+		return "[ПРОЙДЕНО]" if battle_done else "[БОЙ]"
 	return "[СЮЖЕТ]"
+
+func _node_action_text(node_type: String, claimed: bool, battle_done: bool) -> String:
+	if node_type == "reward":
+		return "Получено" if claimed else "Открыть"
+	if node_type == "battle":
+		return "Пройден" if battle_done else "В бой"
+	return "Открыть"
 
 func _node_icon(node_type: String) -> Texture2D:
 	match node_type:

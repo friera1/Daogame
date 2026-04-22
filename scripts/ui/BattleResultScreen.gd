@@ -7,17 +7,40 @@ func _ready() -> void:
 	var result := GameSession.last_battle_result
 	var victory := bool(result.get("victory", false))
 	title_label.text = "Победа" if victory else "Поражение"
-	var rewards := result.get("rewards", {})
-	rewards_label.text = "[b]Награды[/b]\n\n" + \
-		"Золото: %s\n" % str(rewards.get("gold", 0)) + \
-		"Эссенция Ци: %s\n" % str(rewards.get("qi_essence", 0)) + \
-		"Духовные камни: %s" % str(rewards.get("spirit_stone", 0))
+	_refresh_rewards_text()
+
+func _refresh_rewards_text() -> void:
+	var rewards := GameSession.last_battle_result.get("rewards", {})
+	var items := rewards.get("items", [])
+	var item_lines: Array[String] = []
+	for item in items:
+		item_lines.append("• %s x%s" % [ConfigRepository.get_item_name(str(item.get("id", ""))), str(item.get("quantity", 1))])
+	var claim_badge := "[ПОЛУЧЕНО]" if GameSession.has_claimed_battle_rewards() else "[ГОТОВО К ПОЛУЧЕНИЮ]"
+	var items_text := "Предметы: нет"
+	if item_lines.size() > 0:
+		items_text = "Предметы:\n%s" % "\n".join(item_lines)
+	rewards_label.text = "%s\n\n[b]Награды[/b]\n\nЗолото: %s\nЭссенция Ци: %s\nДуховные камни: %s\n%s" % [
+		claim_badge,
+		str(rewards.get("gold", 0)),
+		str(rewards.get("qi_essence", 0)),
+		str(rewards.get("spirit_stone", 0)),
+		items_text
+	]
+
+func _claim_if_needed() -> void:
+	if GameSession.has_claimed_battle_rewards():
+		return
+	GameSession.claim_last_battle_rewards()
+	_refresh_rewards_text()
 
 func _on_continue_pressed() -> void:
+	_claim_if_needed()
 	SceneRouter.goto_scene("res://scenes/lobby/LobbyScreen.tscn")
 
 func _on_retry_pressed() -> void:
+	_claim_if_needed()
 	SceneRouter.goto_scene("res://scenes/battle/BattleScreen.tscn")
 
 func _on_upgrade_pressed() -> void:
+	_claim_if_needed()
 	SceneRouter.goto_scene("res://scenes/cultivation/CultivationScreen.tscn")

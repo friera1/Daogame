@@ -143,6 +143,7 @@ func _add_arena_card() -> void:
 	var state := GameSession.get_arena_state()
 	var opponents: Array = state.get("opponents", [])
 	var top := opponents[0] if not opponents.is_empty() else {}
+	var reward := GameSession.get_arena_rank_reward_preview()
 	var card := PanelContainer.new()
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	UITheme.apply_card(card, UITheme.COLOR_GOLD_DARK)
@@ -156,7 +157,7 @@ func _add_arena_card() -> void:
 	icon.texture = IconLoader.get_skill_icon("jade_guard")
 	var label := Label.new()
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.text = "[ARENA] рейтинг %d · попытки %d/%d · лучший соперник %s" % [int(state.get("season_rating", 1200)), int(state.get("remaining_runs", 0)), int(state.get("max_runs", 0)), str(top.get("name", "-"))]
+	label.text = "[ARENA] %s · рейтинг %d · попытки %d/%d · season reward %d нефрита" % [str(state.get("league", "Бронза")), int(state.get("season_rating", 1200)), int(state.get("remaining_runs", 0)), int(state.get("max_runs", 0)), int(reward.get("jade", 0))]
 	var fight_button := Button.new()
 	fight_button.text = "Дуэль"
 	fight_button.icon = IconLoader.get_skill_icon("azure_slash")
@@ -167,6 +168,29 @@ func _add_arena_card() -> void:
 	row.add_child(label)
 	row.add_child(fight_button)
 	mission_list.add_child(card)
+	var reward_card := PanelContainer.new()
+	reward_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	UITheme.apply_card(reward_card, UITheme.COLOR_GOLD)
+	var reward_row := HBoxContainer.new()
+	reward_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	reward_row.add_theme_constant_override("separation", 12)
+	reward_card.add_child(reward_row)
+	var reward_icon := TextureRect.new()
+	reward_icon.custom_minimum_size = Vector2(44, 44)
+	reward_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	reward_icon.texture = IconLoader.get_currency_icon("jade")
+	var reward_label := Label.new()
+	reward_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	reward_label.text = "[ARENA REWARD] %s · %d зол. · %d нефрита" % [str(reward.get("tier", "bronze")), int(reward.get("gold", 0)), int(reward.get("jade", 0))]
+	var reward_button := Button.new()
+	reward_button.text = "Забрать"
+	reward_button.icon = IconLoader.get_currency_icon("bound_spirit_stone")
+	UITheme.apply_accent_button(reward_button, true)
+	reward_button.pressed.connect(_claim_arena_rank_reward)
+	reward_row.add_child(reward_icon)
+	reward_row.add_child(reward_label)
+	reward_row.add_child(reward_button)
+	mission_list.add_child(reward_card)
 
 func _add_season_pass_card() -> void:
 	var state := GameSession.get_season_pass_state()
@@ -197,6 +221,33 @@ func _add_season_pass_card() -> void:
 	row.add_child(label)
 	row.add_child(claim_button)
 	mission_list.add_child(card)
+	for mission in GameSession.get_season_pass_missions():
+		var mission_card := PanelContainer.new()
+		mission_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var done := int(mission.get("progress", 0)) >= int(mission.get("target", 1))
+		var mission_claimed := bool(mission.get("claimed", false))
+		UITheme.apply_card(mission_card, UITheme.COLOR_SUCCESS if mission_claimed else UITheme.COLOR_GOLD_DARK if done else UITheme.COLOR_TEXT_SECONDARY)
+		var mission_row := HBoxContainer.new()
+		mission_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		mission_row.add_theme_constant_override("separation", 12)
+		mission_card.add_child(mission_row)
+		var mission_icon := TextureRect.new()
+		mission_icon.custom_minimum_size = Vector2(44, 44)
+		mission_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		mission_icon.texture = IconLoader.get_currency_icon("bound_spirit_stone")
+		var mission_label := Label.new()
+		mission_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		mission_label.text = "[PASS MISSION] %s · %d/%d · XP %d" % [str(mission.get("title", "Миссия")), int(mission.get("progress", 0)), int(mission.get("target", 1)), int(mission.get("xp", 0))]
+		var mission_button := Button.new()
+		mission_button.text = "Получено" if mission_claimed else "Зачесть"
+		mission_button.icon = IconLoader.get_currency_icon("jade")
+		UITheme.apply_accent_button(mission_button, true)
+		mission_button.disabled = mission_claimed or not done
+		mission_button.pressed.connect(_claim_season_mission.bind(str(mission.get("id", "pass_event"))))
+		mission_row.add_child(mission_icon)
+		mission_row.add_child(mission_label)
+		mission_row.add_child(mission_button)
+		mission_list.add_child(mission_card)
 
 func _refresh() -> void:
 	GameSession.refresh_live_ops_state()
@@ -274,6 +325,13 @@ func _enter_arena() -> void:
 	OnlineSyncService.queue_action("arena_enter", {"opponent": opponent})
 	SceneRouter.goto_scene("res://scenes/battle/BattleScreen.tscn")
 
+func _claim_arena_rank_reward() -> void:
+	var result := GameSession.claim_arena_rank_reward()
+	summary_label.text = str(result.get("text", "Season reward арены недоступен"))
+	if bool(result.get("ok", false)):
+		OnlineSyncService.queue_action("arena_rank_claim", result)
+	_refresh()
+
 func _claim_season_pass(level: int) -> void:
 	var result := GameSession.claim_season_pass_reward(level)
 	if not bool(result.get("ok", false)):
@@ -281,6 +339,13 @@ func _claim_season_pass(level: int) -> void:
 		return
 	OnlineSyncService.queue_action("season_pass_claim", {"level": level, "reward": result.get("reward", {})})
 	summary_label.text = str(result.get("text", "Награда season pass получена"))
+	_refresh()
+
+func _claim_season_mission(mission_id: String) -> void:
+	var result := GameSession.claim_season_pass_mission(mission_id)
+	summary_label.text = str(result.get("text", "Season mission недоступна"))
+	if bool(result.get("ok", false)):
+		OnlineSyncService.queue_action("season_mission_claim", result)
 	_refresh()
 
 func _claim_reward(mission: Dictionary) -> void:

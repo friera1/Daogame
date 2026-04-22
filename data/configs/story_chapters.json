@@ -15,7 +15,8 @@
       "nodes": [
         {"id": "c2_n1", "type": "story", "title": "Шёпот древних рун"},
         {"id": "c2_n2", "type": "battle", "title": "Страж руин"},
-        {"id": "c2_n3", "type": "reward", "title": "Нефритовый знак", "rewards": {"gold": 2200, "bound_spirit_stone": 65}}
+        {"id": "c2_n3", "type": "elite_battle", "title": "Элитный хранитель жилы"},
+        {"id": "c2_n4", "type": "reward", "title": "Нефритовый знак", "rewards": {"gold": 2200, "bound_spirit_stone": 65}}
       ]
     },
     {
@@ -24,7 +25,8 @@
       "nodes": [
         {"id": "c3_n1", "type": "story", "title": "Небо над пиком дрожит"},
         {"id": "c3_n2", "type": "battle", "title": "Молниеносный дух"},
-        {"id": "c3_n3", "type": "reward", "title": "Печать прорыва", "rewards": {"gold": 3000, "bound_spirit_stone": 90, "jade": 5}}
+        {"id": "c3_n3", "type": "boss_battle", "title": "Повелитель громовой печати"},
+        {"id": "c3_n4", "type": "reward", "title": "Печать прорыва", "rewards": {"gold": 3000, "bound_spirit_stone": 90, "jade": 5}}
       ]
     }
   ]

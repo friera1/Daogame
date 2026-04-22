@@ -16,6 +16,7 @@ const BATTLE_STAMINA_COST := 6
 
 var player_hp_value := 1200
 var enemy_hp_value := 1800
+var player_hp_max := 1200
 var battle_over := false
 var battle_context: Dictionary = {}
 
@@ -53,6 +54,7 @@ func _apply_context_scaling() -> void:
 			break
 	enemy_hp_value += (chapter_index - 1) * 220 + stage_bonus * 60
 	player_hp_value += stage_bonus * 40
+	player_hp_max = player_hp_value
 	_append_log("Контекст боя: глава %d, стадия %s" % [chapter_index, ConfigRepository.get_stage_name(stage_id)])
 
 func _refresh() -> void:
@@ -94,10 +96,27 @@ func _build_rewards(victory: bool) -> Dictionary:
 		"items": items
 	}
 
+func _story_battle_stars(victory: bool) -> int:
+	if not victory:
+		return 0
+	var hp_ratio := 0.0
+	if player_hp_max > 0:
+		hp_ratio = float(player_hp_value) / float(player_hp_max)
+	var stars := 1
+	if hp_ratio >= 0.5:
+		stars += 1
+	if hp_ratio >= 0.85:
+		stars += 1
+	return clamp(stars, 1, 3)
+
 func _finalize_battle(victory: bool) -> void:
+	var stars := _story_battle_stars(victory) if str(battle_context.get("source", "")) == "story" else 0
+	if stars > 0:
+		_append_log("Получено звёзд: %d" % stars)
 	GameSession.last_battle_result = {
 		"victory": victory,
 		"claimed": false,
+		"stars": stars,
 		"context": battle_context,
 		"rewards": _build_rewards(victory)
 	}
@@ -128,7 +147,7 @@ func _on_skill_2_pressed() -> void:
 	if battle_over:
 		return
 	var shield := 70
-	player_hp_value = min(player_hp_value + shield, 1200)
+	player_hp_value = min(player_hp_value + shield, player_hp_max)
 	_append_log("Нефритовый щит восстанавливает устойчивость на %d" % shield)
 	_refresh()
 	_enemy_turn()

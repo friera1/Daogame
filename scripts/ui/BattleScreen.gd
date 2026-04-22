@@ -25,7 +25,8 @@ func _ready() -> void:
 	_apply_art()
 	player_name.text = PlayerState.get_name()
 	enemy_name.text = str(battle_context.get("enemy_name", "Страж духовных руин"))
-	if str(battle_context.get("source", "")) == "event_dungeon":
+	var source := str(battle_context.get("source", ""))
+	if source == "event_dungeon":
 		var event_start := GameSession.begin_event_dungeon_run()
 		if not bool(event_start.get("ok", false)):
 			_append_log(str(event_start.get("text", "Ивент-подземелье недоступно")))
@@ -35,6 +36,17 @@ func _ready() -> void:
 			return
 		_append_log("Потрачено энергии: %d" % int(event_start.get("stamina_cost", 0)))
 		_append_log("Осталось попыток события: %d" % int(event_start.get("remaining_runs", 0)))
+	elif source == "guild_boss":
+		var guild_start := GameSession.begin_guild_boss_run()
+		if not bool(guild_start.get("ok", false)):
+			_append_log(str(guild_start.get("text", "Босс ордена недоступен")))
+			_disable_skills()
+			await get_tree().create_timer(1.2).timeout
+			SceneRouter.goto_scene("res://scenes/guild/GuildScreen.tscn")
+			return
+		_append_log("Потрачено энергии: %d" % int(guild_start.get("stamina_cost", 0)))
+		_append_log("Осталось попыток босса: %d" % int(guild_start.get("remaining_runs", 0)))
+		_append_log("Прогресс босса ордена: %d%%" % int(guild_start.get("progress", 0)))
 	else:
 		var stamina_cost := _battle_stamina_cost()
 		if not PlayerState.spend_stamina(stamina_cost):
@@ -57,8 +69,11 @@ func _battle_stamina_cost() -> int:
 	return BATTLE_STAMINA_COST
 
 func _battle_multiplier() -> float:
-	if str(battle_context.get("source", "")) == "event_dungeon":
+	var source := str(battle_context.get("source", ""))
+	if source == "event_dungeon":
 		return 1.55
+	if source == "guild_boss":
+		return 2.1
 	match _battle_node_type():
 		"elite_battle":
 			return 1.35
@@ -88,8 +103,11 @@ func _apply_context_scaling() -> void:
 	player_hp_value += stage_bonus * 40
 	player_hp_max = player_hp_value
 	_append_log("Контекст боя: глава %d, стадия %s" % [chapter_index, ConfigRepository.get_stage_name(stage_id)])
-	if str(battle_context.get("source", "")) == "event_dungeon":
+	var source := str(battle_context.get("source", ""))
+	if source == "event_dungeon":
 		_append_log("Лимитированное подземелье активно: усиленные трофеи и дневные попытки")
+	elif source == "guild_boss":
+		_append_log("Босс ордена активен: недельный лимит заходов и усиленные награды")
 	elif _battle_node_type() == "elite_battle":
 		_append_log("Элитный враг усиливает награды и сложность")
 	elif _battle_node_type() == "boss_battle":
@@ -118,9 +136,12 @@ func _disable_skills() -> void:
 	ultimate_button.disabled = true
 
 func _build_rewards(victory: bool) -> Dictionary:
-	if str(battle_context.get("source", "")) == "event_dungeon":
+	var source := str(battle_context.get("source", ""))
+	if source == "event_dungeon":
 		return GameSession.get_event_dungeon_rewards(victory)
-	return GameSession._build_story_rewards(int(battle_context.get("chapter_index", 1)), _battle_node_type(), victory) if str(battle_context.get("source", "")) == "story" else {
+	if source == "guild_boss":
+		return GameSession.get_guild_boss_rewards(victory)
+	return GameSession._build_story_rewards(int(battle_context.get("chapter_index", 1)), _battle_node_type(), victory) if source == "story" else {
 		"gold": 320,
 		"qi_essence": 18,
 		"spirit_stone": 1,

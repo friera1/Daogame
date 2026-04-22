@@ -149,6 +149,35 @@ offset_right = 680.0
 offset_bottom = 198.0
 text = "Оффлайн-награды"
 
+[node name="SyncPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+offset_left = 420.0
+offset_top = 146.0
+offset_right = 696.0
+offset_bottom = 210.0
+
+[node name="SyncMargin" type="MarginContainer" parent="SyncPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 6
+
+[node name="SyncHBox" type="HBoxContainer" parent="SyncPanel/SyncMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SyncStatusLabel" type="Label" parent="SyncPanel/SyncMargin/SyncHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "SYNC: OK"
+
+[node name="SyncFlushButton" type="Button" parent="SyncPanel/SyncMargin/SyncHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Flush"
+
 [node name="HeroPanel" type="PanelContainer" parent="."]
 layout_mode = 1
 offset_left = 150.0
@@ -297,6 +326,7 @@ layout_mode = 2
 text = "Общение"
 
 [connection signal="pressed" from="TopBar/TopMargin/TopHBox/MailButton" to="." method="_on_mail_pressed"]
+[connection signal="pressed" from="SyncPanel/SyncMargin/SyncHBox/SyncFlushButton" to="." method="_on_sync_flush_pressed"]
 [connection signal="pressed" from="MainCTAButton" to="." method="_on_cultivation_pressed"]
 [connection signal="pressed" from="BottomNav/CharacterButton" to="." method="_on_character_pressed"]
 [connection signal="pressed" from="RightMenu/InventoryButton" to="." method="_on_inventory_pressed"]

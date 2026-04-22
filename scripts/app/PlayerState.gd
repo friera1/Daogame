@@ -54,7 +54,16 @@ func _ensure_profile_defaults() -> void:
 	if not profile.has("stamina_progress"):
 		profile["stamina_progress"] = {"current": 30, "max": 30, "last_regen_time": Time.get_unix_time_from_system(), "regen_interval_sec": 300}
 	if not profile.has("mailbox_progress"):
-		profile["mailbox_progress"] = {"claimed_messages": {}}
+		profile["mailbox_progress"] = {"claimed_messages": {}, "generated_keys": {}, "inbox_messages": []}
+	else:
+		var mailbox := profile.get("mailbox_progress", {})
+		if not mailbox.has("claimed_messages"):
+			mailbox["claimed_messages"] = {}
+		if not mailbox.has("generated_keys"):
+			mailbox["generated_keys"] = {}
+		if not mailbox.has("inbox_messages"):
+			mailbox["inbox_messages"] = []
+		profile["mailbox_progress"] = mailbox
 
 func save_profile() -> void:
 	SaveService.save_profile(profile)
@@ -108,7 +117,31 @@ func get_stamina_progress() -> Dictionary:
 	return profile.get("stamina_progress", {"current": 30, "max": 30, "last_regen_time": Time.get_unix_time_from_system(), "regen_interval_sec": 300})
 
 func get_mailbox_progress() -> Dictionary:
-	return profile.get("mailbox_progress", {"claimed_messages": {}})
+	return profile.get("mailbox_progress", {"claimed_messages": {}, "generated_keys": {}, "inbox_messages": []})
+
+func get_inbox_messages() -> Array:
+	return get_mailbox_progress().get("inbox_messages", [])
+
+func add_inbox_message(message: Dictionary) -> void:
+	var mailbox_progress := get_mailbox_progress()
+	var inbox := get_inbox_messages()
+	inbox.append(message)
+	mailbox_progress["inbox_messages"] = inbox
+	profile["mailbox_progress"] = mailbox_progress
+	save_profile()
+	emit_signal("mailbox_changed")
+
+func has_generated_mail_key(mail_key: String) -> bool:
+	return bool(get_mailbox_progress().get("generated_keys", {}).get(mail_key, false))
+
+func mark_generated_mail_key(mail_key: String) -> void:
+	var mailbox_progress := get_mailbox_progress()
+	var keys := mailbox_progress.get("generated_keys", {})
+	keys[mail_key] = true
+	mailbox_progress["generated_keys"] = keys
+	profile["mailbox_progress"] = mailbox_progress
+	save_profile()
+	emit_signal("mailbox_changed")
 
 func has_claimed_mail(message_id: String) -> bool:
 	return bool(get_mailbox_progress().get("claimed_messages", {}).get(message_id, false))

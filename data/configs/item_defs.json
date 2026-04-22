@@ -40,6 +40,13 @@
       "qi_gain": 50
     },
     {
+      "id": "stamina_pill_small",
+      "name": "Пилюля бодрости",
+      "type": "consumable",
+      "stamina_gain": 12,
+      "rarity": "rare"
+    },
+    {
       "id": "breakthrough_stone",
       "name": "Камень прорыва",
       "type": "material"

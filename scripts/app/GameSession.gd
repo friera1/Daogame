@@ -3,13 +3,17 @@ extends Node
 const STORY_SWEEP_STAMINA_COST := 4
 const EVENT_DUNGEON_MAX_RUNS_PER_DAY := 3
 const EVENT_DUNGEON_STAMINA_COST := 8
+const GUILD_BOSS_MAX_RUNS_PER_WEEK := 2
+const GUILD_BOSS_STAMINA_COST := 10
 
 var is_initialized: bool = false
 var last_battle_result: Dictionary = {}
 var claimed_daily_missions: Dictionary = {}
 var pending_battle_context: Dictionary = {}
 var current_daily_key: String = ""
+var current_weekly_key: String = ""
 var event_dungeon_runs_used: Dictionary = {}
+var guild_boss_runs_used: Dictionary = {}
 
 func initialize() -> void:
 	if is_initialized:
@@ -18,13 +22,19 @@ func initialize() -> void:
 	PlayerState.load_or_create_profile()
 	IdleRewardService.mark_exit_time()
 	current_daily_key = _today_key_utc()
+	current_weekly_key = _weekly_key_utc()
 	_apply_daily_reset_if_needed()
+	_apply_weekly_reset_if_needed()
 	_ensure_system_mail_generated()
 	is_initialized = true
 
 func _today_key_utc() -> String:
 	var now := Time.get_datetime_dict_from_system(true)
 	return "%04d-%02d-%02d" % [int(now.get("year", 1970)), int(now.get("month", 1)), int(now.get("day", 1))]
+
+func _weekly_key_utc() -> String:
+	var now := Time.get_datetime_dict_from_system(true)
+	return "%04d-W%02d" % [int(now.get("year", 1970)), int(now.get("weekday", 1))]
 
 func _cycle_day_index() -> int:
 	return int(floor(float(Time.get_unix_time_from_system()) / 86400.0))
@@ -39,6 +49,15 @@ func _apply_daily_reset_if_needed() -> void:
 	event_dungeon_runs_used.clear()
 	current_daily_key = today
 	_ensure_system_mail_generated()
+
+func _apply_weekly_reset_if_needed() -> void:
+	var week_key := _weekly_key_utc()
+	if current_weekly_key == "":
+		current_weekly_key = week_key
+	if current_weekly_key == week_key:
+		return
+	guild_boss_runs_used.clear()
+	current_weekly_key = week_key
 
 func _ensure_system_mail_generated() -> void:
 	var daily_key := "daily_supply_%s" % current_daily_key
@@ -67,13 +86,16 @@ func _ensure_system_mail_generated() -> void:
 
 func refresh_live_ops_state() -> void:
 	_apply_daily_reset_if_needed()
+	_apply_weekly_reset_if_needed()
 
 func get_daily_reset_status() -> Dictionary:
 	_apply_daily_reset_if_needed()
+	_apply_weekly_reset_if_needed()
 	var now := Time.get_unix_time_from_system()
 	var seconds_until_reset := 86400 - int(now % 86400)
 	return {
 		"daily_key": current_daily_key,
+		"weekly_key": current_weekly_key,
 		"seconds_until_reset": seconds_until_reset,
 		"shop_cycle": _cycle_day_index() % 3,
 		"banner_cycle": _cycle_day_index() % 2,
@@ -155,6 +177,60 @@ func get_event_dungeon_rewards(victory: bool) -> Dictionary:
 		"qi_essence": 75 + cycle * 24,
 		"spirit_stone": 2 + cycle,
 		"jade": 6 + cycle * 2,
+		"items": items
+	}
+
+func get_guild_boss_state() -> Dictionary:
+	_apply_weekly_reset_if_needed()
+	var cycle := _cycle_day_index() % 3
+	var boss_names := ["Дракон небесной меди", "Пожиратель нефрита", "Владыка расколотой печати"]
+	var boss_id := "guild_boss_%d" % cycle
+	var used := int(guild_boss_runs_used.get(boss_id, 0))
+	var progress := min(used * 35, 100)
+	return {
+		"boss_id": boss_id,
+		"cycle": cycle,
+		"name": boss_names[min(cycle, boss_names.size() - 1)],
+		"max_runs": GUILD_BOSS_MAX_RUNS_PER_WEEK,
+		"used_runs": used,
+		"remaining_runs": max(GUILD_BOSS_MAX_RUNS_PER_WEEK - used, 0),
+		"stamina_cost": GUILD_BOSS_STAMINA_COST,
+		"progress": progress,
+		"boss_ready": true
+	}
+
+func begin_guild_boss_run() -> Dictionary:
+	var state := get_guild_boss_state()
+	if int(state.get("remaining_runs", 0)) <= 0:
+		return {"ok": false, "text": "Попытки босса ордена на этой неделе закончились"}
+	if not PlayerState.spend_stamina(GUILD_BOSS_STAMINA_COST):
+		return {"ok": false, "text": "Недостаточно энергии для босса ордена"}
+	var boss_id := str(state.get("boss_id", "guild_boss_0"))
+	guild_boss_runs_used[boss_id] = int(guild_boss_runs_used.get(boss_id, 0)) + 1
+	return {
+		"ok": true,
+		"boss_id": boss_id,
+		"stamina_cost": GUILD_BOSS_STAMINA_COST,
+		"remaining_runs": max(int(state.get("remaining_runs", 0)) - 1, 0),
+		"progress": min((int(state.get("used_runs", 0)) + 1) * 35, 100)
+	}
+
+func get_guild_boss_rewards(victory: bool) -> Dictionary:
+	var state := get_guild_boss_state()
+	var cycle := int(state.get("cycle", 0))
+	if not victory:
+		return {"gold": 180, "qi_essence": 20, "spirit_stone": 0, "jade": 0, "items": []}
+	var items: Array = [
+		{"id": "qi_pill_small", "quantity": 3 + cycle, "rarity": "rare"},
+		{"id": "breakthrough_stone", "quantity": 1, "rarity": "epic"}
+	]
+	if cycle >= 1:
+		items.append({"id": "stamina_pill_small", "quantity": 1, "rarity": "rare"})
+	return {
+		"gold": 1400 + cycle * 420,
+		"qi_essence": 120 + cycle * 30,
+		"spirit_stone": 4 + cycle,
+		"jade": 10 + cycle * 3,
 		"items": items
 	}
 

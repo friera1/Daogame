@@ -53,31 +53,73 @@ func _maybe_show_tutorial() -> void:
 	var overlay := TUTORIAL_OVERLAY_SCENE.instantiate()
 	add_child(overlay)
 
+func _style_menu_button(button: Button, is_primary: bool = false) -> void:
+	button.custom_minimum_size = Vector2(128, 54)
+	button.add_theme_font_size_override("font_size", 17)
+	button.text = button.text.strip_edges()
+	UITheme.apply_accent_button(button, is_primary)
+	if not is_primary:
+		button.add_theme_stylebox_override("normal", UITheme.make_button_style(Color(UITheme.COLOR_PANEL_ALT, 0.86), Color(UITheme.COLOR_JADE_DARK, 0.55), UITheme.COLOR_TEXT))
+		button.add_theme_stylebox_override("hover", UITheme.make_button_style(Color(UITheme.COLOR_CARD_SOFT, 0.95), UITheme.COLOR_JADE_LIGHT, UITheme.COLOR_TEXT))
+
+func _style_menu_container(path: NodePath) -> void:
+	var node := get_node_or_null(path)
+	if node == null:
+		return
+	if node is VBoxContainer or node is HBoxContainer:
+		node.add_theme_constant_override("separation", 8)
+	for child in node.get_children():
+		if child is Button:
+			_style_menu_button(child, false)
+
 func _apply_visual_polish() -> void:
-	cta_button.add_theme_font_size_override("font_size", 28)
-	cta_button.add_theme_color_override("font_color", UITheme.COLOR_BG)
-	cta_button.modulate = UITheme.COLOR_GOLD
+	var bg_panel := StyleBoxFlat.new()
+	bg_panel.bg_color = UITheme.COLOR_BG
+	add_theme_stylebox_override("panel", bg_panel)
+	UITheme.style_title(name_label)
+	UITheme.style_title(hero_title)
+	level_label.add_theme_color_override("font_color", UITheme.COLOR_GOLD)
+	stage_label.add_theme_color_override("font_color", UITheme.COLOR_JADE_LIGHT)
+	progress_label.add_theme_color_override("font_color", UITheme.COLOR_TEXT_SECONDARY)
+	power_label.add_theme_color_override("font_color", UITheme.COLOR_TEXT_SOFT)
 	status_label.add_theme_color_override("font_color", UITheme.COLOR_GOLD)
+	status_label.add_theme_font_size_override("font_size", 17)
 	sync_status_label.add_theme_color_override("font_color", UITheme.COLOR_TEXT)
+	sync_status_label.add_theme_font_size_override("font_size", 15)
 	sync_meta_label.add_theme_color_override("font_color", UITheme.COLOR_TEXT_SECONDARY)
-	sync_reconnect_button.add_theme_font_size_override("font_size", 14)
-	sync_ack_button.add_theme_font_size_override("font_size", 14)
-	sync_flush_button.add_theme_font_size_override("font_size", 14)
+	sync_meta_label.add_theme_font_size_override("font_size", 13)
+	hero_title.add_theme_font_size_override("font_size", 30)
+	hero_hint.add_theme_color_override("font_color", UITheme.COLOR_TEXT_SECONDARY)
+	hero_hint.add_theme_font_size_override("font_size", 15)
+	hero_silhouette.color = Color(UITheme.COLOR_JADE_DARK, 0.16)
+	cta_button.custom_minimum_size = Vector2(0, 64)
+	cta_button.add_theme_font_size_override("font_size", 24)
+	UITheme.apply_accent_button(cta_button, true)
+	_style_menu_container("LeftMenu")
+	_style_menu_container("RightMenu")
+	_style_menu_container("BottomNav")
+	for button in [sync_reconnect_button, sync_ack_button, sync_flush_button, mail_button]:
+		button.add_theme_font_size_override("font_size", 14)
+		button.custom_minimum_size.y = 42
 	UITheme.apply_accent_button(sync_reconnect_button, false)
 	UITheme.apply_accent_button(sync_ack_button, true)
 	UITheme.apply_accent_button(sync_flush_button, false)
-	hero_title.add_theme_color_override("font_color", UITheme.COLOR_GOLD)
-	hero_title.add_theme_font_size_override("font_size", 28)
-	hero_hint.add_theme_color_override("font_color", UITheme.COLOR_TEXT_SECONDARY)
-	hero_silhouette.color = Color(UITheme.COLOR_JADE_DARK, 0.22)
+	UITheme.apply_accent_button(mail_button, false)
+	for icon in [spirit_stone_icon, bound_stone_icon, jade_icon]:
+		icon.custom_minimum_size = Vector2(28, 28)
+	for label in [stones_label, bound_label, jade_label]:
+		label.add_theme_font_size_override("font_size", 17)
+		label.add_theme_color_override("font_color", UITheme.COLOR_TEXT)
 
 func _apply_art() -> void:
 	var bg := ArtLoader.load_texture_safe(LOBBY_BG_PATH)
 	if bg != null:
 		lobby_background_art.texture = bg
+		lobby_background_art.modulate = Color(0.75, 0.9, 1, 0.72)
 	var hero := ArtLoader.load_texture_safe(HERO_ART_PATH)
 	if hero != null:
 		hero_art.texture = hero
+		hero_art.modulate = Color(1, 1, 1, 0.96)
 		hero_hint.text = ""
 
 func _apply_icons() -> void:
@@ -108,28 +150,20 @@ func _refresh() -> void:
 	name_label.text = PlayerState.get_name()
 	level_label.text = "Ур. %d" % PlayerState.get_level()
 	hero_title.text = PlayerState.get_name()
-
 	var cult := PlayerState.get_cultivation()
 	var stage_id := str(cult.get("current_stage_id", "mortal_early"))
 	stage_label.text = ConfigRepository.get_stage_name(stage_id)
-	progress_label.text = "%s / %s" % [_format_big(int(cult.get("qi_exp", 0))), _format_big(int(cult.get("qi_exp_required", 1)))]
-
+	progress_label.text = "Ци: %s / %s" % [_format_big(int(cult.get("qi_exp", 0))), _format_big(int(cult.get("qi_exp_required", 1)))]
 	var stamina := PlayerState.refresh_stamina()
-	power_label.text = "Сила: %d · Энергия: %d/%d" % [PlayerState.get_power(), int(stamina.get("current", 0)), int(stamina.get("max", 30))]
-
+	power_label.text = "⚔ %d   •   ⚡ %d/%d" % [PlayerState.get_power(), int(stamina.get("current", 0)), int(stamina.get("max", 30))]
 	var currencies := PlayerState.get_currencies()
-	stones_label.text = str(currencies.get("spirit_stone", 0))
-	bound_label.text = str(currencies.get("bound_spirit_stone", 0))
-	jade_label.text = str(currencies.get("jade", 0))
-
+	stones_label.text = _format_big(int(currencies.get("spirit_stone", 0)))
+	bound_label.text = _format_big(int(currencies.get("bound_spirit_stone", 0)))
+	jade_label.text = _format_big(int(currencies.get("jade", 0)))
 	var mail_count := PlayerState.get_unclaimed_mail_count()
-	mail_button.text = "Почта" if mail_count <= 0 else "Почта (%d)" % mail_count
+	mail_button.text = "Почта" if mail_count <= 0 else "Почта %d" % mail_count
 	mail_button.modulate = UITheme.COLOR_GOLD if mail_count > 0 else Color(1, 1, 1, 1)
-
-	if bool(cult.get("breakthrough_ready", false)):
-		cta_button.text = "Прорыв"
-	else:
-		cta_button.text = "Культивация"
+	cta_button.text = "Прорыв готов" if bool(cult.get("breakthrough_ready", false)) else "Культивировать"
 	_refresh_sync_status()
 
 func _format_ack_time(timestamp: int) -> String:
@@ -148,16 +182,16 @@ func _refresh_sync_status() -> void:
 		sync_status_label.modulate = UITheme.COLOR_WARNING
 	else:
 		sync_status_label.modulate = UITheme.COLOR_SUCCESS
-	sync_meta_label.text = "restore: %d · ack: %s" % [int(sync.get("restored_event_count", 0)), _format_ack_time(int(sync.get("last_ack_time", 0)))]
+	sync_meta_label.text = "restore %d · ack %s" % [int(sync.get("restored_event_count", 0)), _format_ack_time(int(sync.get("last_ack_time", 0)))]
 	sync_ack_button.disabled = pending <= 0
 
 func _show_idle_status() -> void:
 	var rewards := IdleRewardService.calculate_rewards()
 	var seconds := int(rewards.get("seconds", 0))
 	if seconds <= 0:
-		status_label.text = "Мир спокоен. Новых оффлайн-наград пока нет."
+		status_label.text = "Мир спокоен · оффлайн-наград пока нет"
 		return
-	status_label.text = "Оффлайн: %s золота, %s эссенции Ци" % [str(rewards.get("gold", 0)), str(rewards.get("qi_essence", 0))]
+	status_label.text = "Оффлайн: %s золота · %s эссенции" % [str(rewards.get("gold", 0)), str(rewards.get("qi_essence", 0))]
 
 func _format_big(value: int) -> String:
 	if value >= 1000000:
@@ -220,14 +254,10 @@ func _on_guild_pressed() -> void:
 func _on_battle_pressed() -> void:
 	var stamina := PlayerState.refresh_stamina()
 	if int(stamina.get("current", 0)) < 6:
-		status_label.text = "Недостаточно энергии для боя (нужно 6)"
+		status_label.text = "Недостаточно энергии для боя · нужно 6"
 		status_label.modulate = UITheme.COLOR_WARNING
 		return
-	GameSession.set_battle_context({
-		"source": "lobby",
-		"chapter_index": 1,
-		"enemy_name": "Страж духовных руин"
-	})
+	GameSession.set_battle_context({"source": "lobby", "chapter_index": 1, "enemy_name": "Страж духовных руин"})
 	SceneRouter.goto_scene("res://scenes/battle/BattleScreen.tscn")
 
 func _on_stub_pressed(feature_name: String) -> void:
